@@ -1,11 +1,13 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"GoBackend/internal/database"
 	"GoBackend/internal/models"
 	"github.com/gin-gonic/gin"
+	"github.com/mattn/go-sqlite3"
 )
 
 // CreateRestaurant handles the API request to create a new restaurant
@@ -20,6 +22,11 @@ func CreateRestaurant(c *gin.Context) {
 
 	// Create the record in the database
 	if err := database.DB.Create(&restaurant).Error; err != nil {
+		var sqliteErr sqlite3.Error
+		if errors.As(err, &sqliteErr) && sqliteErr.Code == sqlite3.ErrConstraintUnique {
+			c.JSON(http.StatusConflict, gin.H{"error": "An account with this email already exists."})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create restaurant"})
 		return
 	}
