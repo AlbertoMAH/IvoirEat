@@ -28,4 +28,7 @@ type Restaurant struct {
 
     // Statut
     IsActive bool `json:"is_active" gorm:"default:true"`
+
+    // Associations
+    Tables []Table `json:"tables"` // A restaurant has many tables
 }

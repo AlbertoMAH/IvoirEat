@@ -31,12 +31,18 @@ func main() {
 	// Admin panel routes
 	admin := r.Group("/admin")
 	{
+		// Restaurant CRUD
 		admin.GET("/restaurants", handlers.ListRestaurantsHandler)
 		admin.GET("/restaurants/new", handlers.NewRestaurantFormHandler)
 		admin.POST("/restaurants", handlers.CreateRestaurantFromFormHandler)
 		admin.GET("/restaurants/edit/:id", handlers.EditRestaurantFormHandler)
 		admin.POST("/restaurants/edit/:id", handlers.UpdateRestaurantHandler)
 		admin.POST("/restaurants/delete/:id", handlers.DeleteRestaurantHandler)
+
+		// Table Management
+		admin.GET("/restaurants/:id/tables", handlers.ListTablesHandler)
+		admin.POST("/restaurants/:id/tables", handlers.AddTableHandler)
+		admin.POST("/tables/delete/:id", handlers.DeleteTableHandler)
 	}
 
 	// Start the server

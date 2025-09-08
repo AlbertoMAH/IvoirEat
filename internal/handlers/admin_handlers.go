@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"GoBackend/internal/database"
 	"GoBackend/internal/models"
@@ -106,6 +107,76 @@ func UpdateRestaurantHandler(c *gin.Context) {
 	}
 
 	c.Redirect(http.StatusFound, "/admin/restaurants")
+}
+
+// --- Table Handlers ---
+
+// ListTablesHandler displays the tables for a specific restaurant.
+func ListTablesHandler(c *gin.Context) {
+	restaurantID := c.Param("id")
+
+	var restaurant models.Restaurant
+	if err := database.DB.First(&restaurant, restaurantID).Error; err != nil {
+		c.String(http.StatusNotFound, "Restaurant not found: %v", err)
+		return
+	}
+
+	var tables []models.Table
+	if err := database.DB.Where("restaurant_id = ?", restaurantID).Find(&tables).Error; err != nil {
+		c.String(http.StatusInternalServerError, "Failed to fetch tables: %v", err)
+		return
+	}
+
+	c.HTML(http.StatusOK, "tables.html", gin.H{
+		"title":      "Manage Tables for " + restaurant.Name,
+		"restaurant": restaurant,
+		"tables":     tables,
+	})
+}
+
+// AddTableHandler handles the form submission for adding a new table.
+func AddTableHandler(c *gin.Context) {
+	restaurantID := c.Param("id")
+	name := c.PostForm("Name")
+	capacityStr := c.PostForm("Capacity")
+
+	capacity, err := strconv.ParseUint(capacityStr, 10, 64)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Invalid capacity format: %v", err)
+		return
+	}
+
+	restID, err := strconv.ParseUint(restaurantID, 10, 64)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Invalid restaurant ID: %v", err)
+		return
+	}
+
+	table := models.Table{
+		Name:         name,
+		Capacity:     uint(capacity),
+		RestaurantID: uint(restID),
+	}
+
+	if err := database.DB.Create(&table).Error; err != nil {
+		c.String(http.StatusInternalServerError, "Failed to add table: %v", err)
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin/restaurants/"+restaurantID+"/tables")
+}
+
+// DeleteTableHandler handles the deletion of a table.
+func DeleteTableHandler(c *gin.Context) {
+	tableID := c.Param("id")
+	restaurantID := c.Query("restaurant_id") // Get restaurant_id from query param for redirect
+
+	if err := database.DB.Delete(&models.Table{}, tableID).Error; err != nil {
+		c.String(http.StatusInternalServerError, "Failed to delete table: %v", err)
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin/restaurants/"+restaurantID+"/tables")
 }
 
 // DeleteRestaurantHandler handles the deletion of a restaurant.
