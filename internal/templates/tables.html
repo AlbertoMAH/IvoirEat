@@ -81,8 +81,70 @@
                         </form>
                     </div>
                 </div>
+
+                <h3 class="mt-4">Ajouter des Tables en Masse</h3>
+                <div class="card">
+                    <div class="card-body">
+                        <form action="/admin/restaurants/{{.restaurant.ID}}/tables/bulk" method="post">
+                            <div id="bulk-form-container">
+                                <!-- Initial Row -->
+                                <div class="row bulk-row mb-2">
+                                    <div class="col-5">
+                                        <label class="form-label-sm">Quantité</label>
+                                        <input type="number" class="form-control" name="counts[]" min="1" placeholder="Ex: 5" required>
+                                    </div>
+                                    <div class="col-5">
+                                        <label class="form-label-sm">Capacité</label>
+                                        <input type="number" class="form-control" name="capacities[]" min="1" placeholder="Ex: 4" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-2">
+                                <button type="button" id="add-row" class="btn btn-sm btn-outline-secondary">+ Ajouter un groupe</button>
+                                <button type="button" id="remove-row" class="btn btn-sm btn-outline-danger" disabled>&ndash; Retirer</button>
+                            </div>
+                            <hr>
+                            <button type="submit" class="btn btn-success w-100">Ajouter Toutes les Tables</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const container = document.getElementById('bulk-form-container');
+            const addBtn = document.getElementById('add-row');
+            const removeBtn = document.getElementById('remove-row');
+
+            function updateRemoveButtonState() {
+                const rows = container.getElementsByClassName('bulk-row');
+                removeBtn.disabled = rows.length <= 1;
+            }
+
+            addBtn.addEventListener('click', function () {
+                const lastRow = container.querySelector('.bulk-row:last-child');
+                const newRow = lastRow.cloneNode(true);
+
+                // Clear values in the new row
+                newRow.querySelectorAll('input').forEach(input => input.value = '');
+
+                container.appendChild(newRow);
+                updateRemoveButtonState();
+            });
+
+            removeBtn.addEventListener('click', function () {
+                const rows = container.getElementsByClassName('bulk-row');
+                if (rows.length > 1) {
+                    container.removeChild(rows[rows.length - 1]);
+                }
+                updateRemoveButtonState();
+            });
+
+            // Initial state
+            updateRemoveButtonState();
+        });
+    </script>
 </body>
 </html>

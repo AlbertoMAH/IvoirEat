@@ -50,6 +50,7 @@ func main() {
 		// Table Management
 		admin.GET("/restaurants/:id/tables", handlers.ListTablesHandler)
 		admin.POST("/restaurants/:id/tables", handlers.AddTableHandler)
+		admin.POST("/restaurants/:id/tables/bulk", handlers.BulkAddTablesHandler)
 		admin.POST("/tables/status/:id", handlers.UpdateTableStatusHandler)
 		admin.POST("/tables/delete/:id", handlers.DeleteTableHandler)
 

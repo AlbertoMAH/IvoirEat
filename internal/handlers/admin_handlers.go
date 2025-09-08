@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -345,6 +346,72 @@ func AddTableHandler(c *gin.Context) {
 
 	if err := database.DB.Create(&table).Error; err != nil {
 		c.String(http.StatusInternalServerError, "Failed to add table: %v", err)
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin/restaurants/"+restaurantID+"/tables")
+}
+
+// BulkAddTablesHandler handles the form submission for adding multiple tables at once.
+func BulkAddTablesHandler(c *gin.Context) {
+	restaurantID := c.Param("id")
+	restID, err := strconv.ParseUint(restaurantID, 10, 64)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Invalid restaurant ID: %v", err)
+		return
+	}
+
+	counts := c.PostFormArray("counts[]")
+	capacities := c.PostFormArray("capacities[]")
+
+	if len(counts) != len(capacities) {
+		c.String(http.StatusBadRequest, "Form data mismatch.")
+		return
+	}
+
+	tx := database.DB.Begin()
+
+	for i := 0; i < len(counts); i++ {
+		count, err := strconv.Atoi(counts[i])
+		if err != nil || count <= 0 {
+			tx.Rollback()
+			c.String(http.StatusBadRequest, "Invalid count value.")
+			return
+		}
+
+		capacity, err := strconv.Atoi(capacities[i])
+		if err != nil || capacity <= 0 {
+			tx.Rollback()
+			c.String(http.StatusBadRequest, "Invalid capacity value.")
+			return
+		}
+
+		// Get the current number of tables with this capacity to create unique names
+		var existingCount int64
+		if err := tx.Model(&models.Table{}).Where("restaurant_id = ? AND capacity = ?", restID, capacity).Count(&existingCount).Error; err != nil {
+			tx.Rollback()
+			c.String(http.StatusInternalServerError, "Failed to count existing tables.")
+			return
+		}
+
+		for j := 0; j < count; j++ {
+			tableName := fmt.Sprintf("Table (%d places) #%d", capacity, existingCount+int64(j)+1)
+			table := models.Table{
+				Name:         tableName,
+				Capacity:     uint(capacity),
+				RestaurantID: uint(restID),
+				Status:       "available",
+			}
+			if err := tx.Create(&table).Error; err != nil {
+				tx.Rollback()
+				c.String(http.StatusInternalServerError, "Failed to create one of the tables.")
+				return
+			}
+		}
+	}
+
+	if err := tx.Commit().Error; err != nil {
+		c.String(http.StatusInternalServerError, "Failed to commit transaction.")
 		return
 	}
 
