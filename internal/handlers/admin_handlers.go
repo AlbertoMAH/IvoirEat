@@ -120,6 +120,14 @@ func UpdateRestaurantHandler(c *gin.Context) {
 	}
 	restaurant.AvgReservationDurationInMinutes = uint(duration)
 
+	intervalStr := c.PostForm("SlotIntervalInMinutes")
+	interval, err := strconv.ParseUint(intervalStr, 10, 64)
+	if err != nil || interval <= 0 {
+		// If there is an error or the value is not positive, set it to 15.
+		interval = 15
+	}
+	restaurant.SlotIntervalInMinutes = uint(interval)
+
 	if err := database.DB.Save(&restaurant).Error; err != nil {
 		c.String(http.StatusInternalServerError, "Failed to update restaurant: %v", err)
 		return

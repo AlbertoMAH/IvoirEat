@@ -131,7 +131,7 @@ func CheckAvailabilityHandler(c *gin.Context) {
 
 	// --- 4. Generate Potential Time Slots & Check Availability ---
 	reservationDuration := time.Duration(restaurant.AvgReservationDurationInMinutes) * time.Minute
-	timeSlotIncrement := 15 * time.Minute
+	timeSlotIncrement := time.Duration(restaurant.SlotIntervalInMinutes) * time.Minute
 	availableSlots := make(map[string]bool)
 
 	// Iterate over each service period for the restaurant

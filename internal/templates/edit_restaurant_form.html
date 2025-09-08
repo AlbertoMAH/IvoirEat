@@ -99,6 +99,11 @@
                     <input type="number" class="form-control" id="avgDuration" name="AvgReservationDurationInMinutes" value="{{.restaurant.AvgReservationDurationInMinutes}}" min="60" required>
 					<div class="form-text">Durée minimale conseillée : 60 minutes.</div>
                 </div>
+                <div class="mb-3">
+                    <label for="slotInterval" class="form-label">Intervalle entre les Créneaux (en minutes)</label>
+                    <input type="number" class="form-control" id="slotInterval" name="SlotIntervalInMinutes" value="{{.restaurant.SlotIntervalInMinutes}}" min="1" required>
+                    <div class="form-text">Ex: 15, 30 ou 60. Offre des arrivées toutes les X minutes.</div>
+                </div>
             </fieldset>
 
             <button type="submit" class="btn btn-primary">Mettre à Jour les Informations</button>
