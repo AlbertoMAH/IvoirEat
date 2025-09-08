@@ -49,6 +49,8 @@ func main() {
 		// Menu of the Day Management
 		admin.GET("/restaurants/:id/menu", handlers.MenuOfTheDayHandler)
 		admin.POST("/restaurants/:id/menu", handlers.AddDishToMenuHandler)
+		admin.GET("/dishes/edit/:id", handlers.EditDishFormHandler)
+		admin.POST("/dishes/edit/:id", handlers.UpdateDishHandler)
 		admin.POST("/dishes/delete/:id", handlers.DeleteDishFromMenuHandler)
 	}
 

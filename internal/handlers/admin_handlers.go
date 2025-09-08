@@ -184,6 +184,53 @@ func AddDishToMenuHandler(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/admin/restaurants/"+restaurantID+"/menu")
 }
 
+// EditDishFormHandler displays the form for editing a dish.
+func EditDishFormHandler(c *gin.Context) {
+	dishID := c.Param("id")
+	var dish models.DailyDish
+	if err := database.DB.First(&dish, dishID).Error; err != nil {
+		c.String(http.StatusNotFound, "Dish not found: %v", err)
+		return
+	}
+
+	c.HTML(http.StatusOK, "edit_dish_form.html", gin.H{
+		"title": "Admin - Edit Dish",
+		"dish":  dish,
+	})
+}
+
+// UpdateDishHandler handles the submission of the edit dish form.
+func UpdateDishHandler(c *gin.Context) {
+	dishID := c.Param("id")
+	var dish models.DailyDish
+	if err := database.DB.First(&dish, dishID).Error; err != nil {
+		c.String(http.StatusNotFound, "Dish not found: %v", err)
+		return
+	}
+
+	// Update fields from form data
+	dish.Name = c.PostForm("Name")
+	dish.PhotoURL = c.PostForm("PhotoURL")
+	priceStr := c.PostForm("Price")
+	price, err := strconv.ParseFloat(priceStr, 64)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Invalid price format: %v", err)
+		return
+	}
+	dish.Price = price
+
+	// The date is not updated, as it's the "menu of the day"
+
+	if err := database.DB.Save(&dish).Error; err != nil {
+		c.String(http.StatusInternalServerError, "Failed to update dish: %v", err)
+		return
+	}
+
+	// Convert uint to string for the URL
+	restaurantIDStr := strconv.FormatUint(uint64(dish.RestaurantID), 10)
+	c.Redirect(http.StatusFound, "/admin/restaurants/"+restaurantIDStr+"/menu")
+}
+
 // DeleteDishFromMenuHandler handles deleting a dish from the menu.
 func DeleteDishFromMenuHandler(c *gin.Context) {
 	dishID := c.Param("id")

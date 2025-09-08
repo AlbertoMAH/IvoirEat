@@ -31,7 +31,8 @@
                             <td><img src="{{.PhotoURL}}" alt="{{.Name}}" width="100" class="img-thumbnail"></td>
                             <td>{{.Name}}</td>
                             <td>{{.Price}} €</td>
-                            <td>
+                            <td class="d-flex gap-2">
+                                <a href="/admin/dishes/edit/{{.ID}}" class="btn btn-warning btn-sm">Modifier</a>
                                 <form action="/admin/dishes/delete/{{.ID}}?restaurant_id={{$.restaurant.ID}}" method="post" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce plat ?');">
                                     <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
                                 </form>
