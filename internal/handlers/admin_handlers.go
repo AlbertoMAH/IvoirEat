@@ -109,6 +109,17 @@ func UpdateRestaurantHandler(c *gin.Context) {
 	restaurant.IsAccessible = c.PostForm("IsAccessible") == "true"
 	restaurant.IsActive = c.PostForm("IsActive") == "true"
 
+	// Update reservation settings
+	durationStr := c.PostForm("AvgReservationDurationInMinutes")
+	duration, err := strconv.ParseUint(durationStr, 10, 64)
+	if err != nil {
+		// Handle error or set a default
+		duration = 90 // Default to 90 minutes
+	}
+	restaurant.AvgReservationDurationInMinutes = uint(duration)
+	restaurant.OpeningTime = c.PostForm("OpeningTime")
+	restaurant.ClosingTime = c.PostForm("ClosingTime")
+
 	if err := database.DB.Save(&restaurant).Error; err != nil {
 		c.String(http.StatusInternalServerError, "Failed to update restaurant: %v", err)
 		return

@@ -29,6 +29,11 @@ type Restaurant struct {
     // Statut
     IsActive bool `json:"is_active" gorm:"default:true"`
 
+    // Reservation Settings
+    AvgReservationDurationInMinutes uint   `json:"avg_reservation_duration_in_minutes"`
+    OpeningTime                     string `json:"opening_time"` // Format "HH:MM"
+    ClosingTime                     string `json:"closing_time"` // Format "HH:MM"
+
     // Associations
     Tables []Table `json:"tables"` // A restaurant has many tables
 }

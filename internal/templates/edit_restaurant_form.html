@@ -91,6 +91,25 @@
                 </div>
             </fieldset>
 
+            <!-- Reservation Settings -->
+            <fieldset class="border p-3 mb-3">
+                <legend class="w-auto px-2">Paramètres de Réservation</legend>
+                <div class="mb-3">
+                    <label for="avgDuration" class="form-label">Durée Moyenne d'une Réservation (en minutes)</label>
+                    <input type="number" class="form-control" id="avgDuration" name="AvgReservationDurationInMinutes" value="{{.restaurant.AvgReservationDurationInMinutes}}" min="1">
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="openingTime" class="form-label">Heure d'Ouverture</label>
+                        <input type="time" class="form-control" id="openingTime" name="OpeningTime" value="{{.restaurant.OpeningTime}}">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="closingTime" class="form-label">Heure de Fermeture</label>
+                        <input type="time" class="form-control" id="closingTime" name="ClosingTime" value="{{.restaurant.ClosingTime}}">
+                    </div>
+                </div>
+            </fieldset>
+
             <button type="submit" class="btn btn-primary">Mettre à Jour</button>
             <a href="/admin/restaurants" class="btn btn-secondary">Annuler</a>
         </form>
