@@ -56,7 +56,7 @@ func CreateRestaurantFromFormHandler(c *gin.Context) {
 	// Save to database
 	if err := database.DB.Create(&restaurant).Error; err != nil {
 		var sqliteErr sqlite3.Error
-		if errors.As(err, &sqliteErr) && sqliteErr.Code == sqlite3.ErrConstraintUnique {
+		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
 			c.String(http.StatusConflict, "Error: The email address '%s' is already in use. Please go back and use a different email.", restaurant.Email)
 			return
 		}

@@ -23,7 +23,7 @@ func CreateRestaurant(c *gin.Context) {
 	// Create the record in the database
 	if err := database.DB.Create(&restaurant).Error; err != nil {
 		var sqliteErr sqlite3.Error
-		if errors.As(err, &sqliteErr) && sqliteErr.Code == sqlite3.ErrConstraintUnique {
+		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
 			c.JSON(http.StatusConflict, gin.H{"error": "An account with this email already exists."})
 			return
 		}
