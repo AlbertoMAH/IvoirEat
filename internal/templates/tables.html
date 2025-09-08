@@ -20,6 +20,8 @@
                         <tr>
                             <th>Nom de la Table</th>
                             <th>Capacité</th>
+                            <th>Statut Actuel</th>
+                            <th>Changer le Statut</th>
                             <th>Action</th>
                         </tr>
                     </thead>
@@ -29,6 +31,24 @@
                             <td>{{.Name}}</td>
                             <td>{{.Capacity}}</td>
                             <td>
+                                {{if eq .Status "available"}}<span class="badge bg-success">Disponible</span>
+                                {{else if eq .Status "occupied"}}<span class="badge bg-warning text-dark">Occupée</span>
+                                {{else if eq .Status "out_of_service"}}<span class="badge bg-secondary">Hors Service</span>
+                                {{else}}<span class="badge bg-light text-dark">{{.Status}}</span>
+                                {{end}}
+                            </td>
+                            <td>
+                                <form action="/admin/tables/status/{{.ID}}" method="post" class="d-flex gap-2">
+                                     <input type="hidden" name="restaurant_id" value="{{$.restaurant.ID}}">
+                                    <select name="Status" class="form-select form-select-sm" style="width: 150px;">
+                                        <option value="available" {{if eq .Status "available"}}selected{{end}}>Disponible</option>
+                                        <option value="occupied" {{if eq .Status "occupied"}}selected{{end}}>Occupée</option>
+                                        <option value="out_of_service" {{if eq .Status "out_of_service"}}selected{{end}}>Hors Service</option>
+                                    </select>
+                                    <button type="submit" class="btn btn-primary btn-sm">OK</button>
+                                </form>
+                            </td>
+                            <td>
                                 <form action="/admin/tables/delete/{{.ID}}?restaurant_id={{$.restaurant.ID}}" method="post" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette table ?');">
                                     <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
                                 </form>
@@ -36,7 +56,7 @@
                         </tr>
                         {{else}}
                         <tr>
-                            <td colspan="3" class="text-center">Aucune table ajoutée pour ce restaurant.</td>
+                            <td colspan="5" class="text-center">Aucune table ajoutée pour ce restaurant.</td>
                         </tr>
                         {{end}}
                     </tbody>

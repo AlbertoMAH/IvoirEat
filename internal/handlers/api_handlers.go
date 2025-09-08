@@ -108,7 +108,7 @@ func CheckAvailabilityHandler(c *gin.Context) {
 
 	// --- 3. Fetch Suitable Tables ---
 	var suitableTables []models.Table
-	if err := database.DB.Where("restaurant_id = ? AND capacity >= ?", restaurantID, partySize).Find(&suitableTables).Error; err != nil {
+	if err := database.DB.Where("restaurant_id = ? AND capacity >= ? AND status = ?", restaurantID, partySize, "available").Find(&suitableTables).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch tables"})
 		return
 	}

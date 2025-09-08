@@ -312,6 +312,27 @@ func AddTableHandler(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/admin/restaurants/"+restaurantID+"/tables")
 }
 
+// UpdateTableStatusHandler handles changing the status of a table.
+func UpdateTableStatusHandler(c *gin.Context) {
+	tableID := c.Param("id")
+	newStatus := c.PostForm("Status")
+	restaurantID := c.PostForm("restaurant_id")
+
+	var table models.Table
+	if err := database.DB.First(&table, tableID).Error; err != nil {
+		c.String(http.StatusNotFound, "Table not found: %v", err)
+		return
+	}
+
+	table.Status = newStatus
+	if err := database.DB.Save(&table).Error; err != nil {
+		c.String(http.StatusInternalServerError, "Failed to update table status: %v", err)
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin/restaurants/"+restaurantID+"/tables")
+}
+
 // DeleteTableHandler handles the deletion of a table.
 func DeleteTableHandler(c *gin.Context) {
 	tableID := c.Param("id")
