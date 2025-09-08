@@ -26,6 +26,8 @@ func main() {
 	api := r.Group("/api/v1")
 	{
 		api.POST("/restaurants", handlers.CreateRestaurant)
+		api.GET("/restaurants", handlers.GetRestaurants)
+		api.GET("/restaurants/:id", handlers.GetRestaurant)
 	}
 
 	// Admin panel routes

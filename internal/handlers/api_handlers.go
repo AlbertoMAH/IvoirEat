@@ -27,3 +27,28 @@ func CreateRestaurant(c *gin.Context) {
 	// Return the created restaurant
 	c.JSON(http.StatusCreated, restaurant)
 }
+
+// GetRestaurants handles the API request to list all restaurants
+func GetRestaurants(c *gin.Context) {
+	var restaurants []models.Restaurant
+	// Use Preload("Tables") to also fetch the associated tables for each restaurant
+	if err := database.DB.Preload("Tables").Find(&restaurants).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch restaurants"})
+		return
+	}
+
+	c.JSON(http.StatusOK, restaurants)
+}
+
+// GetRestaurant handles the API request for a single restaurant
+func GetRestaurant(c *gin.Context) {
+	id := c.Param("id")
+	var restaurant models.Restaurant
+
+	if err := database.DB.Preload("Tables").First(&restaurant, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Restaurant not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, restaurant)
+}
