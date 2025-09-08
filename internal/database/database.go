@@ -19,7 +19,7 @@ func ConnectDatabase() {
 
 	log.Println("Database connection successful.")
 
-	err = database.AutoMigrate(&models.Restaurant{}, &models.Table{})
+	err = database.AutoMigrate(&models.Restaurant{}, &models.Table{}, &models.DailyDish{})
 	if err != nil {
 		log.Fatal("Failed to migrate database!", err)
 	}

@@ -45,6 +45,11 @@ func main() {
 		admin.GET("/restaurants/:id/tables", handlers.ListTablesHandler)
 		admin.POST("/restaurants/:id/tables", handlers.AddTableHandler)
 		admin.POST("/tables/delete/:id", handlers.DeleteTableHandler)
+
+		// Menu of the Day Management
+		admin.GET("/restaurants/:id/menu", handlers.MenuOfTheDayHandler)
+		admin.POST("/restaurants/:id/menu", handlers.AddDishToMenuHandler)
+		admin.POST("/dishes/delete/:id", handlers.DeleteDishFromMenuHandler)
 	}
 
 	// Start the server

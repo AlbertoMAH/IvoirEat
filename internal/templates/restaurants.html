@@ -39,8 +39,9 @@
                             <span class="badge bg-danger">Inactif</span>
                         {{end}}
                     </td>
-                    <td>
-                        <a href="/admin/restaurants/{{.ID}}/tables" class="btn btn-info btn-sm">Gérer les Tables</a>
+                    <td class="d-flex gap-2">
+                        <a href="/admin/restaurants/{{.ID}}/tables" class="btn btn-info btn-sm">Tables</a>
+                        <a href="/admin/restaurants/{{.ID}}/menu" class="btn btn-success btn-sm">Menu du Jour</a>
                     </td>
                     <td class="d-flex gap-2">
                         <a href="/admin/restaurants/edit/{{.ID}}" class="btn btn-warning btn-sm">Modifier</a>
