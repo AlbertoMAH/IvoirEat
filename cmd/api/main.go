@@ -34,6 +34,9 @@ func main() {
 		admin.GET("/restaurants", handlers.ListRestaurantsHandler)
 		admin.GET("/restaurants/new", handlers.NewRestaurantFormHandler)
 		admin.POST("/restaurants", handlers.CreateRestaurantFromFormHandler)
+		admin.GET("/restaurants/edit/:id", handlers.EditRestaurantFormHandler)
+		admin.POST("/restaurants/edit/:id", handlers.UpdateRestaurantHandler)
+		admin.POST("/restaurants/delete/:id", handlers.DeleteRestaurantHandler)
 	}
 
 	// Start the server

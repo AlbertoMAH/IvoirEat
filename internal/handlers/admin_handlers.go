@@ -59,3 +59,62 @@ func CreateRestaurantFromFormHandler(c *gin.Context) {
 	// Redirect to the list page
 	c.Redirect(http.StatusFound, "/admin/restaurants")
 }
+
+// EditRestaurantFormHandler displays the form for editing an existing restaurant.
+func EditRestaurantFormHandler(c *gin.Context) {
+	id := c.Param("id")
+	var restaurant models.Restaurant
+	if err := database.DB.First(&restaurant, id).Error; err != nil {
+		c.String(http.StatusNotFound, "Restaurant not found: %v", err)
+		return
+	}
+
+	c.HTML(http.StatusOK, "edit_restaurant_form.html", gin.H{
+		"title":      "Admin - Edit Restaurant",
+		"restaurant": restaurant,
+	})
+}
+
+// UpdateRestaurantHandler handles the submission of the edit restaurant form.
+func UpdateRestaurantHandler(c *gin.Context) {
+	id := c.Param("id")
+	var restaurant models.Restaurant
+	if err := database.DB.First(&restaurant, id).Error; err != nil {
+		c.String(http.StatusNotFound, "Restaurant not found: %v", err)
+		return
+	}
+
+	// Update fields from form data
+	restaurant.Name = c.PostForm("Name")
+	restaurant.CuisineType = c.PostForm("CuisineType")
+	restaurant.Description = c.PostForm("Description")
+	restaurant.LogoURL = c.PostForm("LogoURL")
+	restaurant.CoverPhotoURL = c.PostForm("CoverPhotoURL")
+	restaurant.Address = c.PostForm("Address")
+	restaurant.GoogleMapsURL = c.PostForm("GoogleMapsURL")
+	restaurant.Phone = c.PostForm("Phone")
+	restaurant.Email = c.PostForm("Email")
+	restaurant.WebsiteURL = c.PostForm("WebsiteURL")
+	restaurant.HasParking = c.PostForm("HasParking") == "true"
+	restaurant.HasWifi = c.PostForm("HasWifi") == "true"
+	restaurant.IsAccessible = c.PostForm("IsAccessible") == "true"
+	restaurant.IsActive = c.PostForm("IsActive") == "true"
+
+	if err := database.DB.Save(&restaurant).Error; err != nil {
+		c.String(http.StatusInternalServerError, "Failed to update restaurant: %v", err)
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin/restaurants")
+}
+
+// DeleteRestaurantHandler handles the deletion of a restaurant.
+func DeleteRestaurantHandler(c *gin.Context) {
+	id := c.Param("id")
+	if err := database.DB.Delete(&models.Restaurant{}, id).Error; err != nil {
+		c.String(http.StatusInternalServerError, "Failed to delete restaurant: %v", err)
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin/restaurants")
+}

@@ -21,6 +21,7 @@
                     <th>Type de Cuisine</th>
                     <th>Téléphone</th>
                     <th>Statut</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -37,10 +38,16 @@
                             <span class="badge bg-danger">Inactif</span>
                         {{end}}
                     </td>
+                    <td class="d-flex gap-2">
+                        <a href="/admin/restaurants/edit/{{.ID}}" class="btn btn-warning btn-sm">Modifier</a>
+                        <form action="/admin/restaurants/delete/{{.ID}}" method="post" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce restaurant ?');">
+                            <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                        </form>
+                    </td>
                 </tr>
                 {{else}}
                 <tr>
-                    <td colspan="5" class="text-center">Aucun restaurant trouvé.</td>
+                    <td colspan="6" class="text-center">Aucun restaurant trouvé.</td>
                 </tr>
                 {{end}}
             </tbody>
