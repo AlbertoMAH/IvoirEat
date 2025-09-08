@@ -47,8 +47,12 @@ func GetRestaurants(c *gin.Context) {
 	startOfDay := time.Date(year, month, day, 0, 0, 0, 0, now.Location())
 	endOfDay := startOfDay.Add(24 * time.Hour)
 
-	// Preload Tables and today's DailyDishes
-	if err := database.DB.Preload("Tables").Preload("DailyDishes", "date >= ? AND date < ?", startOfDay, endOfDay).Find(&restaurants).Error; err != nil {
+	// Preload associations
+	if err := database.DB.
+		Preload("Tables").
+		Preload("ServicePeriods").
+		Preload("DailyDishes", "date >= ? AND date < ?", startOfDay, endOfDay).
+		Find(&restaurants).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch restaurants"})
 		return
 	}
@@ -67,7 +71,11 @@ func GetRestaurant(c *gin.Context) {
 	startOfDay := time.Date(year, month, day, 0, 0, 0, 0, now.Location())
 	endOfDay := startOfDay.Add(24 * time.Hour)
 
-	if err := database.DB.Preload("Tables").Preload("DailyDishes", "date >= ? AND date < ?", startOfDay, endOfDay).First(&restaurant, id).Error; err != nil {
+	if err := database.DB.
+		Preload("Tables").
+		Preload("ServicePeriods").
+		Preload("DailyDishes", "date >= ? AND date < ?", startOfDay, endOfDay).
+		First(&restaurant, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Restaurant not found"})
 		return
 	}
@@ -75,82 +83,98 @@ func GetRestaurant(c *gin.Context) {
 	c.JSON(http.StatusOK, restaurant)
 }
 
-// CheckAvailabilityHandler handles the API request to check for available reservation slots.
+// CheckAvailabilityHandler handles the API request to check for available reservation slots based on total capacity.
 func CheckAvailabilityHandler(c *gin.Context) {
 	restaurantID := c.Param("id")
-	dateStr := c.Query("date") // e.g., "2024-12-25"
-	partySizeStr := c.Query("party_size")
+	dateStr := c.Query("date")       // e.g., "2024-12-25"
+	partySizeStr := c.Query("party_size") // e.g., "4"
 
 	// --- 1. Parse and Validate Inputs ---
 	if dateStr == "" || partySizeStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "date and party_size query parameters are required"})
 		return
 	}
-
 	date, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format. Please use YYYY-MM-DD."})
 		return
 	}
-
 	partySize, err := strconv.Atoi(partySizeStr)
 	if err != nil || partySize <= 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid party_size. Must be a positive integer."})
 		return
 	}
 
-	// --- 2. Fetch Restaurant and its Rules ---
+	// --- 2. Fetch Restaurant, Tables, and Service Periods ---
 	var restaurant models.Restaurant
-	if err := database.DB.First(&restaurant, restaurantID).Error; err != nil {
+	if err := database.DB.Preload("Tables").Preload("ServicePeriods").First(&restaurant, restaurantID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Restaurant not found"})
 		return
 	}
-
-	// --- 3. Fetch Suitable Tables ---
-	var suitableTables []models.Table
-	if err := database.DB.Where("restaurant_id = ? AND capacity >= ? AND status = ?", restaurantID, partySize, "available").Find(&suitableTables).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not fetch tables"})
+	if len(restaurant.ServicePeriods) == 0 {
+		c.JSON(http.StatusOK, gin.H{"available_slots": []string{}, "message": "This restaurant is not configured for reservations."})
 		return
 	}
-	if len(suitableTables) == 0 {
-		c.JSON(http.StatusOK, gin.H{"available_slots": []string{}, "message": "No tables large enough for the requested party size."})
+
+	// --- 3. Calculate Total Capacity ---
+	var totalCapacity int
+	for _, table := range restaurant.Tables {
+		if table.Status == "available" {
+			totalCapacity += int(table.Capacity)
+		}
+	}
+	if totalCapacity < partySize {
+		c.JSON(http.StatusOK, gin.H{"available_slots": []string{}, "message": "The restaurant does not have enough total capacity for a party of this size."})
 		return
 	}
 
 	// --- 4. Generate Potential Time Slots & Check Availability ---
-	openingTime, _ := time.Parse("15:04", restaurant.OpeningTime)
-	closingTime, _ := time.Parse("15:04", restaurant.ClosingTime)
 	reservationDuration := time.Duration(restaurant.AvgReservationDurationInMinutes) * time.Minute
-	timeSlotIncrement := 15 * time.Minute // Check every 15 minutes
-
+	timeSlotIncrement := 15 * time.Minute
 	availableSlots := make(map[string]bool)
 
-	// Start from the restaurant's opening time on the requested date
-	currentTimeSlot := time.Date(date.Year(), date.Month(), date.Day(), openingTime.Hour(), openingTime.Minute(), 0, 0, time.UTC)
+	// Iterate over each service period for the restaurant
+	for _, period := range restaurant.ServicePeriods {
+		openingTime, _ := time.Parse("15:04", period.OpeningTime)
+		closingTime, _ := time.Parse("15:04", period.ClosingTime)
 
-	// The last possible time to start a reservation
-	lastBookingTime := time.Date(date.Year(), date.Month(), date.Day(), closingTime.Hour(), closingTime.Minute(), 0, 0, time.UTC).Add(-reservationDuration)
+		// Start from the service's opening time on the requested date
+		currentTimeSlot := time.Date(date.Year(), date.Month(), date.Day(), openingTime.Hour(), openingTime.Minute(), 0, 0, time.UTC)
+		// The last possible time to start a reservation
+		lastBookingTime := time.Date(date.Year(), date.Month(), date.Day(), closingTime.Hour(), closingTime.Minute(), 0, 0, time.UTC).Add(-reservationDuration)
 
-	for currentTimeSlot.Before(lastBookingTime) || currentTimeSlot.Equal(lastBookingTime) {
-		slotStartTime := currentTimeSlot
-		slotEndTime := slotStartTime.Add(reservationDuration)
+		for currentTimeSlot.Before(lastBookingTime) || currentTimeSlot.Equal(lastBookingTime) {
+			slotStartTime := currentTimeSlot
+			slotEndTime := slotStartTime.Add(reservationDuration)
 
-		// Check if this slot is available on ANY of the suitable tables
-		for _, table := range suitableTables {
-			var overlappingReservations int64
+			// --- Calculate booked capacity for this specific time slot ---
+			var bookedCapacity int
+			var overlappingReservations []models.Reservation
+
+			// Find all table IDs for the current restaurant
+			var tableIDs []uint
+			for _, table := range restaurant.Tables {
+				tableIDs = append(tableIDs, table.ID)
+			}
+
+			// Find reservations that overlap with the current time slot across all tables of the restaurant
 			database.DB.Model(&models.Reservation{}).
-				Where("table_id = ?", table.ID).
+				Where("table_id IN (?)", tableIDs).
 				Where("reservation_start_time < ? AND reservation_end_time > ?", slotEndTime, slotStartTime).
-				Count(&overlappingReservations)
+				Find(&overlappingReservations)
 
-			if overlappingReservations == 0 {
-				// This slot is available for this table
+			for _, r := range overlappingReservations {
+				bookedCapacity += int(r.NumberOfGuests)
+			}
+
+			// Check if there is enough capacity
+			if (totalCapacity - bookedCapacity) >= partySize {
 				slotStr := slotStartTime.Format("15:04")
 				availableSlots[slotStr] = true
-				break // No need to check other tables for this same time slot
 			}
+
+			currentTimeSlot = currentTimeSlot.Add(timeSlotIncrement)
 		}
-		currentTimeSlot = currentTimeSlot.Add(timeSlotIncrement)
 	}
 
 	// --- 5. Format and Return Response ---

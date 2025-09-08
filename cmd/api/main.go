@@ -42,6 +42,10 @@ func main() {
 		admin.POST("/restaurants/edit/:id", handlers.UpdateRestaurantHandler)
 		admin.POST("/restaurants/delete/:id", handlers.DeleteRestaurantHandler)
 
+		// Service Period Management
+		admin.POST("/restaurants/:id/service-periods", handlers.AddServicePeriodHandler)
+		admin.POST("/service-periods/delete/:id", handlers.DeleteServicePeriodHandler)
+
 		// Table Management
 		admin.GET("/restaurants/:id/tables", handlers.ListTablesHandler)
 		admin.POST("/restaurants/:id/tables", handlers.AddTableHandler)

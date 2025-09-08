@@ -73,7 +73,8 @@ func CreateRestaurantFromFormHandler(c *gin.Context) {
 func EditRestaurantFormHandler(c *gin.Context) {
 	id := c.Param("id")
 	var restaurant models.Restaurant
-	if err := database.DB.First(&restaurant, id).Error; err != nil {
+	// Preload the ServicePeriods association
+	if err := database.DB.Preload("ServicePeriods").First(&restaurant, id).Error; err != nil {
 		c.String(http.StatusNotFound, "Restaurant not found: %v", err)
 		return
 	}
@@ -112,20 +113,58 @@ func UpdateRestaurantHandler(c *gin.Context) {
 	// Update reservation settings
 	durationStr := c.PostForm("AvgReservationDurationInMinutes")
 	duration, err := strconv.ParseUint(durationStr, 10, 64)
-	if err != nil {
-		// Handle error or set a default
-		duration = 90 // Default to 90 minutes
+	if err != nil || duration < 60 {
+		// If there is an error or the value is less than 60, set it to 60.
+		duration = 60
 	}
 	restaurant.AvgReservationDurationInMinutes = uint(duration)
-	restaurant.OpeningTime = c.PostForm("OpeningTime")
-	restaurant.ClosingTime = c.PostForm("ClosingTime")
 
 	if err := database.DB.Save(&restaurant).Error; err != nil {
 		c.String(http.StatusInternalServerError, "Failed to update restaurant: %v", err)
 		return
 	}
 
-	c.Redirect(http.StatusFound, "/admin/restaurants")
+	// Redirect back to the edit page to show the changes
+	c.Redirect(http.StatusFound, "/admin/restaurants/edit/"+id)
+}
+
+// --- Service Period Handlers ---
+
+// AddServicePeriodHandler handles adding a new service period to a restaurant.
+func AddServicePeriodHandler(c *gin.Context) {
+	restaurantID := c.Param("id")
+	restID, err := strconv.ParseUint(restaurantID, 10, 32)
+	if err != nil {
+		c.String(http.StatusBadRequest, "Invalid restaurant ID")
+		return
+	}
+
+	servicePeriod := models.ServicePeriod{
+		Name:         c.PostForm("Name"),
+		OpeningTime:  c.PostForm("OpeningTime"),
+		ClosingTime:  c.PostForm("ClosingTime"),
+		RestaurantID: uint(restID),
+	}
+
+	if err := database.DB.Create(&servicePeriod).Error; err != nil {
+		c.String(http.StatusInternalServerError, "Failed to create service period: %v", err)
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin/restaurants/edit/"+restaurantID)
+}
+
+// DeleteServicePeriodHandler handles deleting a service period.
+func DeleteServicePeriodHandler(c *gin.Context) {
+	periodID := c.Param("id")
+	restaurantID := c.Query("restaurant_id") // Needed for the redirect
+
+	if err := database.DB.Delete(&models.ServicePeriod{}, periodID).Error; err != nil {
+		c.String(http.StatusInternalServerError, "Failed to delete service period: %v", err)
+		return
+	}
+
+	c.Redirect(http.StatusFound, "/admin/restaurants/edit/"+restaurantID)
 }
 
 // --- Menu of the Day Handlers ---

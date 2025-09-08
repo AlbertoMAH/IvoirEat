@@ -30,11 +30,10 @@ type Restaurant struct {
     IsActive bool `json:"is_active" gorm:"default:true"`
 
     // Reservation Settings
-    AvgReservationDurationInMinutes uint   `json:"avg_reservation_duration_in_minutes"`
-    OpeningTime                     string `json:"opening_time"` // Format "HH:MM"
-    ClosingTime                     string `json:"closing_time"` // Format "HH:MM"
+    AvgReservationDurationInMinutes uint `json:"avg_reservation_duration_in_minutes" gorm:"default:60"`
 
     // Associations
-    Tables      []Table     `json:"tables"`       // A restaurant has many tables
-    DailyDishes []DailyDish `json:"daily_dishes"` // A restaurant has many daily dishes
+    Tables         []Table         `json:"tables"`          // A restaurant has many tables
+    DailyDishes    []DailyDish     `json:"daily_dishes"`    // A restaurant has many daily dishes
+    ServicePeriods []ServicePeriod `json:"service_periods"` // A restaurant has many service periods
 }

@@ -95,24 +95,65 @@
             <fieldset class="border p-3 mb-3">
                 <legend class="w-auto px-2">Paramètres de Réservation</legend>
                 <div class="mb-3">
-                    <label for="avgDuration" class="form-label">Durée Moyenne d'une Réservation (en minutes)</label>
-                    <input type="number" class="form-control" id="avgDuration" name="AvgReservationDurationInMinutes" value="{{.restaurant.AvgReservationDurationInMinutes}}" min="1">
-                </div>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="openingTime" class="form-label">Heure d'Ouverture</label>
-                        <input type="time" class="form-control" id="openingTime" name="OpeningTime" value="{{.restaurant.OpeningTime}}">
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="closingTime" class="form-label">Heure de Fermeture</label>
-                        <input type="time" class="form-control" id="closingTime" name="ClosingTime" value="{{.restaurant.ClosingTime}}">
-                    </div>
+                    <label for="avgDuration" class="form-label">Durée Standard d'une Réservation (en minutes)</label>
+                    <input type="number" class="form-control" id="avgDuration" name="AvgReservationDurationInMinutes" value="{{.restaurant.AvgReservationDurationInMinutes}}" min="60" required>
+					<div class="form-text">Durée minimale conseillée : 60 minutes.</div>
                 </div>
             </fieldset>
 
-            <button type="submit" class="btn btn-primary">Mettre à Jour</button>
+            <button type="submit" class="btn btn-primary">Mettre à Jour les Informations</button>
             <a href="/admin/restaurants" class="btn btn-secondary">Annuler</a>
         </form>
+
+        <hr>
+
+        <!-- Service Period Management -->
+        <div class="mt-5">
+            <h2>Gérer les Périodes de Service</h2>
+
+            <!-- List Existing Periods -->
+            <div class="mb-4">
+                <h4>Services Actuels</h4>
+                {{if .restaurant.ServicePeriods}}
+                    <ul class="list-group">
+                        {{range .restaurant.ServicePeriods}}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{.Name}}</strong>: {{.OpeningTime}} - {{.ClosingTime}}
+                            </div>
+                            <form action="/admin/service-periods/delete/{{.ID}}?restaurant_id={{$.restaurant.ID}}" method="post" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette période ?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Supprimer</button>
+                            </form>
+                        </li>
+                        {{end}}
+                    </ul>
+                {{else}}
+                    <p>Aucune période de service n'a été définie pour ce restaurant.</p>
+                {{end}}
+            </div>
+
+            <!-- Add New Period -->
+            <div>
+                <h4>Ajouter une Nouvelle Période de Service</h4>
+                <form action="/admin/restaurants/{{.restaurant.ID}}/service-periods" method="post" class="border p-3">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="periodName" class="form-label">Nom du Service</label>
+                            <input type="text" class="form-control" id="periodName" name="Name" placeholder="Ex: Déjeuner, Dîner" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="periodOpeningTime" class="form-label">Heure d'Ouverture</label>
+                            <input type="time" class="form-control" id="periodOpeningTime" name="OpeningTime" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="periodClosingTime" class="form-label">Heure de Fermeture</label>
+                            <input type="time" class="form-control" id="periodClosingTime" name="ClosingTime" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success">Ajouter la Période</button>
+                </form>
+            </div>
+        </div>
     </div>
 </body>
 </html>
