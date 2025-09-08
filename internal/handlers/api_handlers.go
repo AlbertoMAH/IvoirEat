@@ -7,7 +7,7 @@ import (
 	"GoBackend/internal/database"
 	"GoBackend/internal/models"
 	"github.com/gin-gonic/gin"
-	"github.com/mattn/go-sqlite3"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // CreateRestaurant handles the API request to create a new restaurant
@@ -22,8 +22,8 @@ func CreateRestaurant(c *gin.Context) {
 
 	// Create the record in the database
 	if err := database.DB.Create(&restaurant).Error; err != nil {
-		var sqliteErr sqlite3.Error
-		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" { // 23505 is the code for unique_violation
 			c.JSON(http.StatusConflict, gin.H{"error": "An account with this email already exists."})
 			return
 		}

@@ -9,7 +9,7 @@ import (
 	"GoBackend/internal/database"
 	"GoBackend/internal/models"
 	"github.com/gin-gonic/gin"
-	"github.com/mattn/go-sqlite3"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // ListRestaurantsHandler handles the request to display a list of all restaurants.
@@ -56,8 +56,8 @@ func CreateRestaurantFromFormHandler(c *gin.Context) {
 
 	// Save to database
 	if err := database.DB.Create(&restaurant).Error; err != nil {
-		var sqliteErr sqlite3.Error
-		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			c.String(http.StatusConflict, "Error: The email address '%s' is already in use. Please go back and use a different email.", restaurant.Email)
 			return
 		}
