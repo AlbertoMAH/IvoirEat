@@ -29,6 +29,7 @@ func main() {
 		api.GET("/restaurants", handlers.GetRestaurants)
 		api.GET("/restaurants/:id", handlers.GetRestaurant)
 		api.GET("/restaurants/:id/availability", handlers.CheckAvailabilityHandler)
+		api.POST("/reservations", handlers.CreateReservationHandler)
 	}
 
 	// Admin panel routes

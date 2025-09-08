@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"net/http"
+	"sort"
 	"strconv"
 	"time"
 
@@ -184,4 +185,133 @@ func CheckAvailabilityHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"available_slots": finalSlots})
+}
+
+// --- Reservation Creation ---
+
+// ReservationRequest represents the expected JSON body for creating a reservation.
+type ReservationRequest struct {
+	RestaurantID  uint   `json:"restaurant_id" binding:"required"`
+	Date          string `json:"date" binding:"required"`          // "YYYY-MM-DD"
+	Time          string `json:"time" binding:"required"`          // "HH:MM"
+	PartySize     int    `json:"party_size" binding:"required,gt=0"`
+	CustomerName  string `json:"customer_name" binding:"required"`
+	CustomerEmail string `json:"customer_email" binding:"required,email"`
+	CustomerPhone string `json:"customer_phone" binding:"required"`
+}
+
+// CreateReservationHandler handles the creation of a new reservation with table assignment.
+func CreateReservationHandler(c *gin.Context) {
+	var req ReservationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body", "details": err.Error()})
+		return
+	}
+
+	// --- 1. Parse Time and Date from Request ---
+	reservationTime, err := time.Parse("15:04", req.Time)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid time format. Please use HH:MM."})
+		return
+	}
+	reservationDate, err := time.Parse("2006-01-02", req.Date)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format. Please use YYYY-MM-DD."})
+		return
+	}
+	slotStartTime := time.Date(
+		reservationDate.Year(), reservationDate.Month(), reservationDate.Day(),
+		reservationTime.Hour(), reservationTime.Minute(), 0, 0, time.UTC,
+	)
+
+	// --- 2. Fetch Restaurant Data ---
+	var restaurant models.Restaurant
+	if err := database.DB.Preload("Tables").Preload("ServicePeriods").First(&restaurant, req.RestaurantID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Restaurant not found"})
+		return
+	}
+	reservationDuration := time.Duration(restaurant.AvgReservationDurationInMinutes) * time.Minute
+	slotEndTime := slotStartTime.Add(reservationDuration)
+
+	// --- 3. Double-check Global Availability (to prevent race conditions) ---
+	var totalCapacity int
+	var tableIDs []uint
+	for _, table := range restaurant.Tables {
+		if table.Status == "available" {
+			totalCapacity += int(table.Capacity)
+			tableIDs = append(tableIDs, table.ID)
+		}
+	}
+
+	var bookedCapacity int
+	var overlappingReservations []models.Reservation
+	database.DB.Model(&models.Reservation{}).
+		Where("table_id IN (?)", tableIDs).
+		Where("reservation_start_time < ? AND reservation_end_time > ?", slotEndTime, slotStartTime).
+		Find(&overlappingReservations)
+	for _, r := range overlappingReservations {
+		bookedCapacity += int(r.NumberOfGuests)
+	}
+
+	if (totalCapacity - bookedCapacity) < req.PartySize {
+		c.JSON(http.StatusConflict, gin.H{"error": "Unfortunately, this time slot is no longer available."})
+		return
+	}
+
+	// --- 4. Table Assignment Algorithm ---
+	var assignedTableID uint
+
+	// a. Filter tables by capacity and status
+	var suitableTables []models.Table
+	for _, table := range restaurant.Tables {
+		if table.Status == "available" && int(table.Capacity) >= req.PartySize {
+			suitableTables = append(suitableTables, table)
+		}
+	}
+
+	// b. Sort by best fit (smallest capacity first)
+	sort.Slice(suitableTables, func(i, j int) bool {
+		return suitableTables[i].Capacity < suitableTables[j].Capacity
+	})
+
+	// c. Find the first free table
+	for _, table := range suitableTables {
+		var count int64
+		database.DB.Model(&models.Reservation{}).
+			Where("table_id = ?", table.ID).
+			Where("reservation_start_time < ? AND reservation_end_time > ?", slotEndTime, slotStartTime).
+			Count(&count)
+
+		if count == 0 {
+			// This table is free, assign it!
+			assignedTableID = table.ID
+			break
+		}
+	}
+
+	if assignedTableID == 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "Sorry, while there is enough total space, no single table is available to accommodate your party at this time."})
+		return
+	}
+
+	// --- 5. Create and Save the Reservation ---
+	newReservation := models.Reservation{
+		CustomerName:         req.CustomerName,
+		CustomerEmail:        req.CustomerEmail,
+		CustomerPhone:        req.CustomerPhone,
+		NumberOfGuests:       uint(req.PartySize),
+		ReservationStartTime: slotStartTime,
+		ReservationEndTime:   slotEndTime,
+		RestaurantID:         req.RestaurantID,
+		TableID:              assignedTableID,
+		Status:               "confirmed",
+	}
+
+	if err := database.DB.Create(&newReservation).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create reservation", "details": err.Error()})
+		return
+	}
+
+	// --- 6. Return Success Response ---
+	c.JSON(http.StatusCreated, newReservation)
 }
