@@ -40,8 +40,15 @@ func CreateRestaurant(c *gin.Context) {
 // GetRestaurants handles the API request to list all restaurants
 func GetRestaurants(c *gin.Context) {
 	var restaurants []models.Restaurant
-	// Use Preload("Tables") to also fetch the associated tables for each restaurant
-	if err := database.DB.Preload("Tables").Find(&restaurants).Error; err != nil {
+
+	// Get today's date range
+	now := time.Now()
+	year, month, day := now.Date()
+	startOfDay := time.Date(year, month, day, 0, 0, 0, 0, now.Location())
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	// Preload Tables and today's DailyDishes
+	if err := database.DB.Preload("Tables").Preload("DailyDishes", "date >= ? AND date < ?", startOfDay, endOfDay).Find(&restaurants).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch restaurants"})
 		return
 	}
@@ -54,7 +61,13 @@ func GetRestaurant(c *gin.Context) {
 	id := c.Param("id")
 	var restaurant models.Restaurant
 
-	if err := database.DB.Preload("Tables").First(&restaurant, id).Error; err != nil {
+	// Get today's date range
+	now := time.Now()
+	year, month, day := now.Date()
+	startOfDay := time.Date(year, month, day, 0, 0, 0, 0, now.Location())
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	if err := database.DB.Preload("Tables").Preload("DailyDishes", "date >= ? AND date < ?", startOfDay, endOfDay).First(&restaurant, id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Restaurant not found"})
 		return
 	}

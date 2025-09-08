@@ -35,5 +35,6 @@ type Restaurant struct {
     ClosingTime                     string `json:"closing_time"` // Format "HH:MM"
 
     // Associations
-    Tables []Table `json:"tables"` // A restaurant has many tables
+    Tables      []Table     `json:"tables"`       // A restaurant has many tables
+    DailyDishes []DailyDish `json:"daily_dishes"` // A restaurant has many daily dishes
 }
