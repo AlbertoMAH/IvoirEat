@@ -31,7 +31,7 @@ type Restaurant struct {
 
     // Reservation Settings
     AvgReservationDurationInMinutes uint `json:"avg_reservation_duration_in_minutes" gorm:"default:60"`
-    SlotIntervalInMinutes           uint `json:"slot_interval_in_minutes" gorm:"default:15"`
+    SlotIntervalInMinutes           uint `json:"slot_interval_in_minutes" gorm:"default:60"`
 
     // Associations
     Tables         []Table         `json:"tables"`          // A restaurant has many tables
