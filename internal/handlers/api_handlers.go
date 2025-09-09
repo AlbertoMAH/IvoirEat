@@ -205,6 +205,129 @@ func CheckAvailabilityHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"availability": finalAvailability})
 }
 
+// --- Table-Specific Availability Structures ---
+
+// TableAvailabilityDetail represents the detailed availability for a single table.
+type TableAvailabilityDetail struct {
+	TableID        uint     `json:"table_id"`
+	TableName      string   `json:"table_name"`
+	Capacity       uint     `json:"capacity"`
+	AvailableSlots []string `json:"available_slots"`
+}
+
+// AvailabilityResponse is the top-level structure for the new endpoint's response.
+type AvailabilityResponse struct {
+	RestaurantID       uint                    `json:"restaurant_id"`
+	Date               string                  `json:"date"`
+	TablesAvailability []TableAvailabilityDetail `json:"tables_availability"`
+}
+
+// GetTableAvailabilityHandler provides a detailed availability for each table in a restaurant.
+func GetTableAvailabilityHandler(c *gin.Context) {
+	// --- 1. Parse and Validate Inputs ---
+	restaurantID := c.Param("id")
+	dateStr := c.Query("date")
+	if dateStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "date query parameter is required"})
+		return
+	}
+
+	date, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format. Please use YYYY-MM-DD."})
+		return
+	}
+
+	// --- 2. Fetch Restaurant and its associations ---
+	var restaurant models.Restaurant
+	if err := database.DB.Preload("Tables").Preload("ServicePeriods").First(&restaurant, restaurantID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Restaurant not found"})
+		return
+	}
+	if len(restaurant.Tables) == 0 {
+		c.JSON(http.StatusOK, AvailabilityResponse{
+			RestaurantID:       restaurant.ID,
+			Date:               dateStr,
+			TablesAvailability: []TableAvailabilityDetail{},
+		})
+		return
+	}
+
+	// --- 3. Fetch all reservations for the day for efficiency ---
+	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+	endOfDay := startOfDay.Add(24*time.Hour - 1*time.Second)
+	var tableIDs []uint
+	for _, table := range restaurant.Tables {
+		tableIDs = append(tableIDs, table.ID)
+	}
+	var allReservationsForDay []models.Reservation
+	database.DB.Where("table_id IN (?) AND reservation_start_time BETWEEN ? AND ?", tableIDs, startOfDay, endOfDay).Find(&allReservationsForDay)
+
+	// Organize reservations by table for quick lookup
+	reservationsByTable := make(map[uint][]models.Reservation)
+	for _, res := range allReservationsForDay {
+		reservationsByTable[res.TableID] = append(reservationsByTable[res.TableID], res)
+	}
+
+	// --- 4. Generate and Check Slots for each table ---
+	var tablesAvailability []TableAvailabilityDetail
+	reservationDuration := time.Duration(restaurant.AvgReservationDurationInMinutes) * time.Minute
+	timeSlotIncrement := time.Duration(restaurant.SlotIntervalInMinutes) * time.Minute
+
+	for _, table := range restaurant.Tables {
+		if table.Status != "available" {
+			continue
+		}
+
+		var availableSlots []string
+		tableReservations := reservationsByTable[table.ID] // Get reservations for this specific table
+
+		for _, period := range restaurant.ServicePeriods {
+			openingTime, _ := time.Parse("15:04", period.OpeningTime)
+			closingTime, _ := time.Parse("15:04", period.ClosingTime)
+
+			currentTimeSlot := time.Date(date.Year(), date.Month(), date.Day(), openingTime.Hour(), openingTime.Minute(), 0, 0, time.UTC)
+			lastBookingTime := time.Date(date.Year(), date.Month(), date.Day(), closingTime.Hour(), closingTime.Minute(), 0, 0, time.UTC).Add(-reservationDuration)
+
+			for currentTimeSlot.Before(lastBookingTime) || currentTimeSlot.Equal(lastBookingTime) {
+				slotStartTime := currentTimeSlot
+				slotEndTime := slotStartTime.Add(reservationDuration)
+
+				isSlotFree := true
+				// Check for overlap only with reservations for this table
+				for _, existingRes := range tableReservations {
+					if existingRes.ReservationStartTime.Before(slotEndTime) && existingRes.ReservationEndTime.After(slotStartTime) {
+						isSlotFree = false
+						break // This slot is booked for this table, check next slot
+					}
+				}
+
+				if isSlotFree {
+					availableSlots = append(availableSlots, slotStartTime.Format("15:04"))
+				}
+
+				currentTimeSlot = currentTimeSlot.Add(timeSlotIncrement)
+			}
+		}
+
+		tablesAvailability = append(tablesAvailability, TableAvailabilityDetail{
+			TableID:        table.ID,
+			TableName:      table.Name,
+			Capacity:       table.Capacity,
+			AvailableSlots: availableSlots,
+		})
+	}
+
+	// --- 5. Construct Final Response ---
+	response := AvailabilityResponse{
+		RestaurantID:       restaurant.ID,
+		Date:               dateStr,
+		TablesAvailability: tablesAvailability,
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 // --- Reservation Creation ---
 
 // ReservationRequest represents the expected JSON body for creating a reservation.

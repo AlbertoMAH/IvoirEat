@@ -29,6 +29,7 @@ func main() {
 		api.GET("/restaurants", handlers.GetRestaurants)
 		api.GET("/restaurants/:id", handlers.GetRestaurant)
 		api.GET("/restaurants/:id/availability", handlers.CheckAvailabilityHandler)
+		api.GET("/restaurants/:id/tables/availability", handlers.GetTableAvailabilityHandler)
 		api.POST("/reservations", handlers.CreateReservationHandler)
 	}
 
