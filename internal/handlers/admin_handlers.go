@@ -16,16 +16,28 @@ import (
 // ListRestaurantsHandler handles the request to display a list of all restaurants.
 func ListRestaurantsHandler(c *gin.Context) {
 	var restaurants []models.Restaurant
-	if err := database.DB.Order("created_at desc").Find(&restaurants).Error; err != nil {
-		c.String(http.StatusInternalServerError, "Error fetching restaurants: %v", err)
+	result := database.DB.Order("created_at desc").Find(&restaurants)
+	err := result.Error
+
+	debugInfo := fmt.Sprintf("GORM query error: %v. Rows affected: %d. Restaurants found in slice: %d.", err, result.RowsAffected, len(restaurants))
+
+	if err != nil {
+		// Even if there's an error, we'll still render the page to show the debug info
+		c.HTML(http.StatusOK, "restaurants.html", gin.H{
+			"title":       "Admin - Restaurants",
+			"restaurants": nil,
+			"debug":       debugInfo,
+		})
 		return
 	}
 
 	c.HTML(http.StatusOK, "restaurants.html", gin.H{
 		"title":       "Admin - Restaurants",
 		"restaurants": restaurants,
+		"debug":       debugInfo,
 	})
 }
+
 
 // NewRestaurantFormHandler displays the form for creating a new restaurant.
 func NewRestaurantFormHandler(c *gin.Context) {
