@@ -2,10 +2,9 @@ package database
 
 import (
 	"log"
-	"os"
+	// "os" // No longer needed
 
 	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
 	"GoBackend/internal/models"
@@ -14,34 +13,23 @@ import (
 var DB *gorm.DB
 
 func ConnectDatabase() {
-	var err error
-	var dialector gorm.Dialector
+	// Hardcode the DSN to ensure the correct one is used, including SSL mode.
+	dsn := "postgresql://ivoireat_db_user:KpkBYEwrBPpi3EHfgF7Hp6cTswEO4Jhi@dpg-d2vcuov5r7bs73co8bmg-a.frankfurt-postgres.render.com/ivoireat_db?sslmode=require"
 
-	// Check if we should use SQLite
-	if os.Getenv("USE_SQLITE") == "true" {
-		dialector = sqlite.Open("file::memory:?cache=shared")
-		log.Println("SQLite database connection successful (in-memory).")
-	} else {
-		// Default to PostgreSQL
-		dsn := os.Getenv("DATABASE_URL")
-		if dsn == "" {
-			log.Fatal("DATABASE_URL environment variable is not set")
-		}
-		dialector = postgres.Open(dsn)
-		log.Println("PostgreSQL database connection successful.")
-	}
+	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
-	DB, err = gorm.Open(dialector, &gorm.Config{})
 	if err != nil {
 		log.Fatal("Failed to connect to database! ", err)
 	}
 
+	log.Println("Database connection successful.")
 
-	// Migrate the schema
-	err = DB.AutoMigrate(&models.Restaurant{}, &models.Table{}, &models.DailyDish{}, &models.Reservation{}, &models.ServicePeriod{})
+	err = database.AutoMigrate(&models.Restaurant{}, &models.Table{}, &models.DailyDish{}, &models.Reservation{}, &models.ServicePeriod{})
 	if err != nil {
 		log.Fatal("Failed to migrate database!", err)
 	}
 
 	log.Println("Database migrated successfully.")
+
+	DB = database
 }
