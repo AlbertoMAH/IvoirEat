@@ -1,99 +1,79 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ajouter un Restaurant</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container mt-4 mb-4">
-        <h1>Ajouter un Nouveau Restaurant</h1>
+{{define "content"}}
+
+<h1 class="h2 mb-4">Ajouter un Nouveau Restaurant</h1>
+
+<div class="card">
+    <div class="card-body">
         <form action="/admin/restaurants" method="post">
-            <!-- Basic Info -->
-            <fieldset class="border p-3 mb-3">
-                <legend class="w-auto px-2">Informations de Base</legend>
-                <div class="mb-3">
-                    <label for="name" class="form-label">Nom du Restaurant</label>
-                    <input type="text" class="form-control" id="name" name="Name" required>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="Name" class="form-label">Nom du Restaurant</label>
+                    <input type="text" class="form-control" id="Name" name="Name" required>
                 </div>
-                <div class="mb-3">
-                    <label for="cuisineType" class="form-label">Type de Cuisine</label>
-                    <input type="text" class="form-control" id="cuisineType" name="CuisineType">
+                <div class="col-md-6">
+                    <label for="CuisineType" class="form-label">Type de Cuisine</label>
+                    <input type="text" class="form-control" id="CuisineType" name="CuisineType" required>
                 </div>
-                <div class="mb-3">
-                    <label for="description" class="form-label">Description</label>
-                    <textarea class="form-control" id="description" name="Description" rows="3"></textarea>
+                <div class="col-12">
+                    <label for="Description" class="form-label">Description</label>
+                    <textarea class="form-control" id="Description" name="Description" rows="3"></textarea>
                 </div>
-                <div class="mb-3">
-                    <label for="logoUrl" class="form-label">URL du Logo</label>
-                    <input type="url" class="form-control" id="logoUrl" name="LogoURL">
+                <div class="col-md-6">
+                    <label for="Address" class="form-label">Adresse</label>
+                    <input type="text" class="form-control" id="Address" name="Address" required>
                 </div>
-                <div class="mb-3">
-                    <label for="coverPhotoUrl" class="form-label">URL de la Photo de Couverture</label>
-                    <input type="url" class="form-control" id="coverPhotoUrl" name="CoverPhotoURL">
+                <div class="col-md-6">
+                    <label for="Phone" class="form-label">Téléphone</label>
+                    <input type="tel" class="form-control" id="Phone" name="Phone">
                 </div>
-            </fieldset>
+                <div class="col-md-6">
+                    <label for="Email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="Email" name="Email" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="WebsiteURL" class="form-label">Site Web</label>
+                    <input type="url" class="form-control" id="WebsiteURL" name="WebsiteURL">
+                </div>
+                 <div class="col-md-6">
+                    <label for="LogoURL" class="form-label">URL du Logo</label>
+                    <input type="url" class="form-control" id="LogoURL" name="LogoURL">
+                </div>
+                <div class="col-md-6">
+                    <label for="CoverPhotoURL" class="form-label">URL de la Photo de Couverture</label>
+                    <input type="url" class="form-control" id="CoverPhotoURL" name="CoverPhotoURL">
+                </div>
+                <div class="col-12">
+                    <label for="GoogleMapsURL" class="form-label">URL Google Maps</label>
+                    <input type="url" class="form-control" id="GoogleMapsURL" name="GoogleMapsURL">
+                </div>
+                <div class="col-12">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="IsActive" name="IsActive" value="true" checked>
+                        <label class="form-check-label" for="IsActive">Restaurant Actif</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="HasParking" name="HasParking" value="true">
+                        <label class="form-check-label" for="HasParking">Parking Disponible</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="HasWifi" name="HasWifi" value="true">
+                        <label class="form-check-label" for="HasWifi">Wi-Fi Disponible</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" role="switch" id="IsAccessible" name="IsAccessible" value="true">
+                        <label class="form-check-label" for="IsAccessible">Accès Handicapé</label>
+                    </div>
+                </div>
+            </div>
 
-            <!-- Location -->
-            <fieldset class="border p-3 mb-3">
-                <legend class="w-auto px-2">Localisation</legend>
-                <div class="mb-3">
-                    <label for="address" class="form-label">Adresse</label>
-                    <input type="text" class="form-control" id="address" name="Address">
-                </div>
-                <div class="mb-3">
-                    <label for="googleMapsUrl" class="form-label">URL Google Maps</label>
-                    <input type="url" class="form-control" id="googleMapsUrl" name="GoogleMapsURL">
-                </div>
-            </fieldset>
-
-            <!-- Contact -->
-            <fieldset class="border p-3 mb-3">
-                <legend class="w-auto px-2">Contact</legend>
-                <div class="mb-3">
-                    <label for="phone" class="form-label">Téléphone</label>
-                    <input type="tel" class="form-control" id="phone" name="Phone">
-                </div>
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" name="Email">
-                </div>
-                <div class="mb-3">
-                    <label for="websiteUrl" class="form-label">Site Web</label>
-                    <input type="url" class="form-control" id="websiteUrl" name="WebsiteURL">
-                </div>
-            </fieldset>
-
-            <!-- Options -->
-            <fieldset class="border p-3 mb-3">
-                <legend class="w-auto px-2">Services & Options</legend>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="true" id="hasParking" name="HasParking">
-                    <label class="form-check-label" for="hasParking">Parking disponible</label>
-                </div>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="true" id="hasWifi" name="HasWifi">
-                    <label class="form-check-label" for="hasWifi">Wifi gratuit</label>
-                </div>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" value="true" id="isAccessible" name="IsAccessible">
-                    <label class="form-check-label" for="isAccessible">Accessible aux personnes à mobilité réduite</label>
-                </div>
-            </fieldset>
-
-             <!-- Status -->
-            <fieldset class="border p-3 mb-3">
-                <legend class="w-auto px-2">Statut</legend>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" value="true" id="isActive" name="IsActive" checked>
-                    <label class="form-check-label" for="isActive">Actif dans le système</label>
-                </div>
-            </fieldset>
-
-            <button type="submit" class="btn btn-success">Enregistrer le Restaurant</button>
-            <a href="/admin/restaurants" class="btn btn-secondary">Annuler</a>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">Créer le Restaurant</button>
+                <a href="/admin/restaurants" class="btn btn-secondary">Annuler</a>
+            </div>
         </form>
     </div>
-</body>
-</html>
+</div>
+
+{{end}}
+
+{{template "layout.html" .}}

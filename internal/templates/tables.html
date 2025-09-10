@@ -1,150 +1,100 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ .title }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container mt-4">
-        <p><a href="/admin/restaurants">&larr; Retour à la liste des restaurants</a></p>
-        <h1 class="mt-2">{{ .restaurant.Name }} - Gestion des Tables</h1>
+{{define "content"}}
 
-        <div class="row mt-4">
-            <!-- Table List -->
-            <div class="col-md-8">
-                <h3>Tables Existantes</h3>
-                <table class="table table-striped table-hover">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Nom de la Table</th>
-                            <th>Capacité</th>
-                            <th>Statut Actuel</th>
-                            <th>Changer le Statut</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{range .tables}}
-                        <tr>
-                            <td>{{.Name}}</td>
-                            <td>{{.Capacity}}</td>
-                            <td>
-                                {{if eq .Status "available"}}<span class="badge bg-success">Disponible</span>
-                                {{else if eq .Status "occupied"}}<span class="badge bg-warning text-dark">Occupée</span>
-                                {{else if eq .Status "out_of_service"}}<span class="badge bg-secondary">Hors Service</span>
-                                {{else}}<span class="badge bg-light text-dark">{{.Status}}</span>
-                                {{end}}
-                            </td>
-                            <td>
-                                <form action="/admin/tables/status/{{.ID}}" method="post" class="d-flex gap-2">
-                                     <input type="hidden" name="restaurant_id" value="{{$.restaurant.ID}}">
-                                    <select name="Status" class="form-select form-select-sm" style="width: 150px;">
-                                        <option value="available" {{if eq .Status "available"}}selected{{end}}>Disponible</option>
-                                        <option value="occupied" {{if eq .Status "occupied"}}selected{{end}}>Occupée</option>
-                                        <option value="out_of_service" {{if eq .Status "out_of_service"}}selected{{end}}>Hors Service</option>
-                                    </select>
-                                    <button type="submit" class="btn btn-primary btn-sm">OK</button>
-                                </form>
-                            </td>
-                            <td>
-                                <form action="/admin/tables/delete/{{.ID}}?restaurant_id={{$.restaurant.ID}}" method="post" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette table ?');">
-                                    <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {{else}}
-                        <tr>
-                            <td colspan="5" class="text-center">Aucune table ajoutée pour ce restaurant.</td>
-                        </tr>
-                        {{end}}
-                    </tbody>
-                </table>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2">Gérer les Tables pour {{ .restaurant.Name }}</h1>
+    </div>
+    <a href="/admin/restaurants/edit/{{ .restaurant.ID }}" class="btn btn-outline-secondary">Retour au Restaurant</a>
+</div>
+
+<div class="row">
+    <!-- Section for displaying tables -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                Liste des Tables
             </div>
-
-            <!-- Add New Table Form -->
-            <div class="col-md-4">
-                <h3>Ajouter une Nouvelle Table</h3>
-                <div class="card">
-                    <div class="card-body">
-                        <form action="/admin/restaurants/{{.restaurant.ID}}/tables" method="post">
-                            <div class="mb-3">
-                                <label for="tableName" class="form-label">Nom de la Table</label>
-                                <input type="text" class="form-control" id="tableName" name="Name" placeholder="Ex: Terrasse 1" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="capacity" class="form-label">Capacité</label>
-                                <input type="number" class="form-control" id="capacity" name="Capacity" min="1" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100">Ajouter la Table</button>
-                        </form>
+            <div class="card-body">
+                {{if .tables}}
+                <div class="list-group">
+                    {{range .tables}}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{.Name}}</strong> - Capacité: {{.Capacity}}
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <form action="/admin/tables/status/{{.ID}}" method="post" class="me-2">
+                                <input type="hidden" name="restaurant_id" value="{{$.restaurant.ID}}">
+                                <select name="Status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <option value="available" {{if eq .Status "available"}}selected{{end}}>Disponible</option>
+                                    <option value="occupied" {{if eq .Status "occupied"}}selected{{end}}>Occupée</option>
+                                    <option value="reserved" {{if eq .Status "reserved"}}selected{{end}}>Réservée</option>
+                                </select>
+                            </form>
+                            <form action="/admin/tables/delete/{{.ID}}?restaurant_id={{$.restaurant.ID}}" method="post" onsubmit="return confirm('Sûr ?');">
+                                <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                            </form>
+                        </div>
                     </div>
+                    {{end}}
                 </div>
-
-                <h3 class="mt-4">Ajouter des Tables en Masse</h3>
-                <div class="card">
-                    <div class="card-body">
-                        <form action="/admin/restaurants/{{.restaurant.ID}}/tables/bulk" method="post">
-                            <div id="bulk-form-container">
-                                <!-- Initial Row -->
-                                <div class="row bulk-row mb-2">
-                                    <div class="col-5">
-                                        <label class="form-label-sm">Quantité</label>
-                                        <input type="number" class="form-control" name="counts[]" min="1" placeholder="Ex: 5" required>
-                                    </div>
-                                    <div class="col-5">
-                                        <label class="form-label-sm">Capacité</label>
-                                        <input type="number" class="form-control" name="capacities[]" min="1" placeholder="Ex: 4" required>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="d-flex justify-content-between mt-2">
-                                <button type="button" id="add-row" class="btn btn-sm btn-outline-secondary">+ Ajouter un groupe</button>
-                                <button type="button" id="remove-row" class="btn btn-sm btn-outline-danger" disabled>&ndash; Retirer</button>
-                            </div>
-                            <hr>
-                            <button type="submit" class="btn btn-success w-100">Ajouter Toutes les Tables</button>
-                        </form>
-                    </div>
-                </div>
+                {{else}}
+                <p class="text-center">Aucune table n'a encore été ajoutée.</p>
+                {{end}}
             </div>
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const container = document.getElementById('bulk-form-container');
-            const addBtn = document.getElementById('add-row');
-            const removeBtn = document.getElementById('remove-row');
+    <!-- Section for adding tables -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">Ajout Rapide</div>
+            <div class="card-body">
+                <form action="/admin/restaurants/{{ .restaurant.ID }}/tables" method="post">
+                    <div class="mb-3">
+                        <label for="tableName" class="form-label">Nom de la Table</label>
+                        <input type="text" class="form-control" id="tableName" name="Name" placeholder="ex: T1, Bar 1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tableCapacity" class="form-label">Capacité</label>
+                        <input type="number" class="form-control" id="tableCapacity" name="Capacity" min="1" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Ajouter la Table</button>
+                </form>
+            </div>
+        </div>
 
-            function updateRemoveButtonState() {
-                const rows = container.getElementsByClassName('bulk-row');
-                removeBtn.disabled = rows.length <= 1;
-            }
+        <div class="card">
+            <div class="card-header">Ajout en Masse</div>
+            <div class="card-body">
+                <form action="/admin/restaurants/{{ .restaurant.ID }}/tables/bulk" method="post" id="bulkAddForm">
+                    <div id="bulk-entries">
+                        <div class="row g-2 mb-2 bulk-entry">
+                            <div class="col-6">
+                                <input type="number" name="counts[]" class="form-control" placeholder="Quantité" min="1" required>
+                            </div>
+                            <div class="col-6">
+                                <input type="number" name="capacities[]" class="form-control" placeholder="Capacité" min="1" required>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" id="add-more" class="btn btn-secondary btn-sm mb-3">Ajouter une autre ligne</button>
+                    <button type="submit" class="btn btn-success w-100">Ajouter en Masse</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
-            addBtn.addEventListener('click', function () {
-                const lastRow = container.querySelector('.bulk-row:last-child');
-                const newRow = lastRow.cloneNode(true);
+<script>
+document.getElementById('add-more').addEventListener('click', function() {
+    var entry = document.querySelector('.bulk-entry').cloneNode(true);
+    // Clear the values in the new cloned entry
+    entry.querySelectorAll('input').forEach(input => input.value = '');
+    document.getElementById('bulk-entries').appendChild(entry);
+});
+</script>
 
-                // Clear values in the new row
-                newRow.querySelectorAll('input').forEach(input => input.value = '');
+{{end}}
 
-                container.appendChild(newRow);
-                updateRemoveButtonState();
-            });
-
-            removeBtn.addEventListener('click', function () {
-                const rows = container.getElementsByClassName('bulk-row');
-                if (rows.length > 1) {
-                    container.removeChild(rows[rows.length - 1]);
-                }
-                updateRemoveButtonState();
-            });
-
-            // Initial state
-            updateRemoveButtonState();
-        });
-    </script>
-</body>
-</html>
+{{template "layout.html" .}}

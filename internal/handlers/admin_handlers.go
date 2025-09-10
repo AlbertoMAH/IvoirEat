@@ -21,7 +21,6 @@ func ListRestaurantsHandler(c *gin.Context) {
 		return
 	}
 
-	// The template will be loaded in main.go
 	c.HTML(http.StatusOK, "restaurants.html", gin.H{
 		"title":       "Admin - Restaurants",
 		"restaurants": restaurants,
