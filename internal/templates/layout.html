@@ -1,4 +1,4 @@
-{{define "layout.html"}}
+{{define "layout"}}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -26,7 +26,8 @@
     </nav>
 
     <div class="container mt-4">
-        {{template "content" .}}
+        {{block "content" .}}
+        {{end}}
     </div>
 
     <footer class="text-center mt-4">
@@ -37,5 +38,3 @@
 </body>
 </html>
 {{end}}
-
-{{define "content"}}{{end}}
