@@ -1,10 +1,10 @@
-name: Deploy Feature Branch into Main Folder
+name: Deploy Full Stack Feature to Main
 
 on:
-  workflow_dispatch:  # pour déclencher manuellement
+  workflow_dispatch:  # permet de lancer manuellement
 
 jobs:
-  deploy:
+  deploy-fullstack:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,24 +20,26 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # 3️⃣ Créer un dossier pour la feature dans main
-      - name: Create feature folder in main
+      # 3️⃣ Créer un dossier pour la feature dans main et copier le contenu
+      - name: Copy feature branch into folder in main
         run: |
-          git checkout main
-          mkdir -p feat-in-main
           git fetch origin feat/initial-backend-structure
-          git checkout origin/feat/initial-backend-structure -- .  # prend tout le contenu de la branche
-          mv * feat-in-main/ || true
-          mv .* feat-in-main/ 2>/dev/null || true
-          git add feat-in-main
+          git checkout main
+          mkdir -p feat-stack
+          # Copier le frontend et backend de la branche feature
+          git checkout origin/feat/initial-backend-structure -- frontend backend parking-dashboard
+          rsync -av --exclude='.git' frontend/ feat-stack/frontend/
+          rsync -av --exclude='.git' backend/ feat-stack/backend/
+          rsync -av --exclude='.git' parking-dashboard/ feat-stack/parking-dashboard/
+          git add feat-stack
 
-      # 4️⃣ Installer Node.js
+      # 4️⃣ Installer Node.js pour le frontend
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 22
 
-      # 5️⃣ Installer Go
+      # 5️⃣ Installer Go pour le backend
       - name: Setup Go
         uses: actions/setup-go@v4
         with:
@@ -46,19 +48,19 @@ jobs:
       # 6️⃣ Installer les dépendances frontend
       - name: Install frontend dependencies
         run: |
-          cd feat-in-main/frontend
+          cd feat-stack/frontend
           npm install
 
       # 7️⃣ Installer les dépendances backend Go
       - name: Install backend dependencies
         run: |
-          cd ../backend
+          cd feat-stack/backend
           go mod tidy
 
-      # 8️⃣ (Optionnel) Commit et push
-      - name: Commit and push to main
+      # 8️⃣ (Optionnel) Commit et push sur main
+      - name: Commit and push changes to main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git commit -m "Add feature branch in subfolder with stack installed" || echo "No changes to commit"
+          git commit -m "Deploy full stack feature branch into main folder" || echo "No changes to commit"
           git push origin main
