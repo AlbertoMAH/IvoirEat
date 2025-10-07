@@ -4,7 +4,7 @@ import (
 	"gobackend/pkg/controllers"
 	"gobackend/pkg/middlewares"
 
-	"github.comcom/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
 // SetupRoutes configure toutes les routes de l'application.
