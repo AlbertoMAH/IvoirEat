@@ -2,9 +2,11 @@ package database
 
 import (
 	"log"
+	"os"
 
 	"gobackend/pkg/models"
 
+	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -12,13 +14,25 @@ import (
 var DB *gorm.DB
 
 func ConnectDatabase() {
-	database, err := gorm.Open(sqlite.Open("restaurant.db"), &gorm.Config{})
+	var err error
+	databaseURL := os.Getenv("DATABASE_URL")
+
+	if databaseURL != "" {
+		// Production: PostgreSQL
+		log.Println("Connecting to PostgreSQL database...")
+		DB, err = gorm.Open(postgres.Open(databaseURL), &gorm.Config{})
+	} else {
+		// Development: SQLite
+		log.Println("Connecting to SQLite database...")
+		DB, err = gorm.Open(sqlite.Open("restaurant.db"), &gorm.Config{})
+	}
+
 	if err != nil {
-		log.Fatal("Erreur connexion base :", err)
+		log.Fatal("Failed to connect to database: ", err)
 	}
 
 	// Migration des modèles
-	err = database.AutoMigrate(
+	err = DB.AutoMigrate(
 		&models.User{},
 		&models.Tenant{},
 		&models.Parking{},
@@ -29,6 +43,4 @@ func ConnectDatabase() {
 	if err != nil {
 		log.Fatal("Erreur de migration :", err)
 	}
-
-	DB = database
 }
