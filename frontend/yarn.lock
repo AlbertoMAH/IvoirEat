@@ -1058,7 +1058,7 @@
     redux-thunk "^3.1.0"
     reselect "^5.1.0"
 
-"@refinedev/antd@^6.0.2":
+"@refinedev/antd@latest":
   version "6.0.2"
   resolved "https://registry.yarnpkg.com/@refinedev/antd/-/antd-6.0.2.tgz#2b4b7b658bd33d8fca26196e5d2c166f7d24341b"
   integrity sha512-Z9UocvTrKG9+9wWArdBk3t0FTXuvQxhg7BukkjnBchIcV8zrYvDPGTjszpFN0xl1TXpZKoHY2psuITLdY7QmhA==
@@ -1074,7 +1074,7 @@
     sunflower-antd "1.0.0-beta.3"
     tslib "^2.6.2"
 
-"@refinedev/cli@^2.16.49":
+"@refinedev/cli@latest":
   version "2.16.49"
   resolved "https://registry.yarnpkg.com/@refinedev/cli/-/cli-2.16.49.tgz#2bf95c8eb2aaacb875a69747ca7a1c547b0077bf"
   integrity sha512-yHV+BNKRRmascLe66oemsRi64SXPkVROs63sesqom7Jra89am0E5IXALbKX6Nn9awoF1bVID8zyAA1FXBIt/kA==
@@ -1116,7 +1116,7 @@
     temp "^0.9.4"
     tslib "^2.6.2"
 
-"@refinedev/core@^5.0.0", "@refinedev/core@^5.0.4":
+"@refinedev/core@^5.0.0", "@refinedev/core@latest":
   version "5.0.4"
   resolved "https://registry.yarnpkg.com/@refinedev/core/-/core-5.0.4.tgz#b5a7f5dcfff2eb5ca7f40485f4814e67be8b361d"
   integrity sha512-rDlumL0wEZzey7MDSxItLaCiO+Q7AVbdfmYEyzC+mzowOvVnbXOU+X6NzzMhJw8xibLsD7hGBZ7g2xwpSRN+bA==
@@ -1177,14 +1177,14 @@
     "@tanstack/react-query" "^5.81.5"
     error-stack-parser "^2.1.4"
 
-"@refinedev/kbar@^2.0.0":
+"@refinedev/kbar@latest":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@refinedev/kbar/-/kbar-2.0.0.tgz#fe090663480d50d85653a41b2cf3ff193ec9f119"
   integrity sha512-9ZM6+OUEg6xv8nl09qeoMGkAdwzVpCllcjy/CJh5zaU4nh/JX0R8gEQ+P3F7gvQ9wo1P7ahHo9i1ib82ULAEKw==
   dependencies:
     kbar "0.1.0-beta.40"
 
-"@refinedev/react-router@^2.0.0":
+"@refinedev/react-router@latest":
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/@refinedev/react-router/-/react-router-2.0.1.tgz#3b10d37cc4280fe38fc3a6f2783d84bc25d5c647"
   integrity sha512-DaBx8D8uc/G9whBV8reerjPpExCxaFgGzbYuQ32T/OAUX05RDp5WrIqEJqOOsWjNpm0YIN4I2e2wnZCSN9gbFw==
@@ -1192,7 +1192,7 @@
     qs "^6.10.1"
     react-router "^7.0.2"
 
-"@refinedev/simple-rest@^6.0.0":
+"@refinedev/simple-rest@latest":
   version "6.0.0"
   resolved "https://registry.yarnpkg.com/@refinedev/simple-rest/-/simple-rest-6.0.0.tgz#8883d3e1717903b7e3aa19a58e3b76e1e1322ed6"
   integrity sha512-fGO/jp8IbCT2av4pWwwsFmxaSmXJwVxibKY/u4REPAtaWnLJpUdCwo0Rfkx9wvsDq9cf8gSECIdgUJxtrVgcqg==
@@ -1724,7 +1724,7 @@ ansicolors@~0.3.2:
   resolved "https://registry.yarnpkg.com/ansicolors/-/ansicolors-0.3.2.tgz#665597de86a9ffe3aa9bfbe6cae5c6ea426b4979"
   integrity sha512-QXu7BPrP29VllRxH8GwB7x5iX5qWKAAMLqKQGWTeLWVlNHNOpVMJ91dsxQAIWXpjuW5wqvxu3Jd/nRjrJ+0pqg==
 
-antd@^5.23.0, antd@^5.27.4:
+antd@^5.23.0, antd@latest:
   version "5.27.4"
   resolved "https://registry.yarnpkg.com/antd/-/antd-5.27.4.tgz#13c97deb12e6aeb43adecd23f3dbe3139a62e579"
   integrity sha512-rhArohoAUCxhkPjGI/BXthOrrjaElL4Fb7d4vEHnIR3DpxFXfegd4rN21IgGdiF+Iz4EFuUZu8MdS8NuJHLSVQ==
@@ -3089,7 +3089,7 @@ eslint-module-utils@^2.12.1:
   dependencies:
     debug "^3.2.7"
 
-eslint-plugin-import@^2.27.5:
+eslint-plugin-import@^2.2.75:
   version "2.32.0"
   resolved "https://registry.yarnpkg.com/eslint-plugin-import/-/eslint-plugin-import-2.32.0.tgz#602b55faa6e4caeaa5e970c198b5c00a37708980"
   integrity sha512-whOE1HFo/qJDyX4SnXzP4N6zOWn79WhnCUY/iDR0mPfQZO8wcYE4JClzI2oZrhBnnMUCBCHZhO6VQyoBU95mZA==
