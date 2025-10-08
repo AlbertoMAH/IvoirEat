@@ -1,10 +1,11 @@
 services:
-  - type: static_site
+  - type: web
     name: frontend
-    env: static
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
-    publishDir: dist
-    rewrites:
-      - source: /*
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
         destination: /index.html
