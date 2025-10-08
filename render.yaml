@@ -5,6 +5,7 @@ services:
     rootDir: frontend
     buildCommand: yarn && yarn build
     startCommand: yarn start
+    publishDirectory: .next
     envVars:
       - key: NEXT_PUBLIC_API_BASE_URL
         fromService:
