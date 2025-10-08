@@ -1,7 +1,7 @@
 import { Refine } from "@refinedev/core";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import { ThemedLayout } from "@refinedev/antd";
-import routerProvider from "@refinedev/react-router-v6";
+import routerProvider from "@refinedev/react-router";
 import dataProvider from "@refinedev/simple-rest";
 import { BrowserRouter, Route, Routes, Outlet } from "react-router-dom";
 import { ConfigProvider } from "antd";
