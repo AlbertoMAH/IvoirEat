@@ -85,5 +85,5 @@ func createSuperAdmin() {
 		log.Fatalf("Failed to create super admin: %v", err)
 	}
 
-	log.Println("Super admin user created successfully.")
+	// log.Println("Super admin user created successfully.")
 }
