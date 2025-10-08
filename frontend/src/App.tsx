@@ -3,17 +3,18 @@ import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import routerProvider from "@refinedev/react-router";
 import dataProvider from "@refinedev/simple-rest";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { ConfigProvider } from "antd";
+import "@refinedev/antd/dist/reset.css";
 
-// We remove AntD related imports for this test
-// import { ConfigProvider } from "antd";
-// import "@refinedev/antd/dist/reset.css";
+import { LoginPage } from "./pages/Login";
 
 function App() {
   return (
     <BrowserRouter>
       <RefineKbarProvider>
+        <ConfigProvider>
             <Refine
-              dataProvider={dataProvider("https://api.fake-rest.refine.dev")}
+              dataProvider={dataProvider(import.meta.env.VITE_API_BASE_URL as string)}
               routerProvider={routerProvider}
               resources={[]}
               options={{
@@ -22,10 +23,11 @@ function App() {
               }}
             >
                 <Routes>
-                    <Route index element={<div>Le routeur fonctionne. Le problème vient d'AntD.</div>} />
+                    <Route index element={<LoginPage />} />
                 </Routes>
               <RefineKbar />
             </Refine>
+        </ConfigProvider>
       </RefineKbarProvider>
     </BrowserRouter>
   );
