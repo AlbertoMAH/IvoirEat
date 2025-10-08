@@ -15,7 +15,7 @@ function App() {
       <RefineKbarProvider>
         <ConfigProvider>
             <Refine
-              dataProvider={dataProvider("https://api.fake-rest.refine.dev")}
+              dataProvider={dataProvider(import.meta.env.VITE_API_BASE_URL as string)}
               routerProvider={routerProvider}
               resources={[]}
               options={{

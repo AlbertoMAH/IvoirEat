@@ -5,6 +5,12 @@ services:
     rootDir: frontend
     buildCommand: yarn install --ignore-scripts && yarn build
     staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: backend
+          property: url
     routes:
       - type: rewrite
         source: /*
