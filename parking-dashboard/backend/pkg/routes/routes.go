@@ -23,7 +23,7 @@ func SetupRoutes(router *gin.Engine) {
 	api := router.Group("/api")
 	{
 		// Routes publiques (ex: login, register)
-		// à ajouter plus tard
+		api.POST("/login", controllers.Login)
 
 		// Routes protégées
 		v1 := api.Group("/v1")
