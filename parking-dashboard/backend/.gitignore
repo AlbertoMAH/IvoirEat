@@ -1,9 +1,2 @@
-# Binaries
-gobackend
-app
-
-# Log files
-*.log
-
-# Database files
-*.db
+# Fichier d'environnement local
+.env
