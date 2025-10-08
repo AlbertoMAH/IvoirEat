@@ -9,6 +9,14 @@ import (
 
 // SetupRoutes configure toutes les routes de l'application.
 func SetupRoutes(router *gin.Engine) {
+	// Route de health check à la racine
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status":  "success",
+			"message": "Welcome to the Parking Reservation API",
+		})
+	})
+
 	// Appliquer le middleware de validation/CORS à toutes les routes
 	router.Use(middlewares.ValidationMiddleware())
 
