@@ -1,41 +1,73 @@
-# vite React TypeScript tailwindcss starter
+# React + TypeScript + Vite
 
-Template for vite, React + tailwindcss + TypeScript projects with some tools preconfigured.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## About
+Currently, two official plugins are available:
 
-Template for vite, React + tailwindcss + TypeScript projects with some tools preconfigured.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-![Screenshot](assets/screenshot.png)
+## React Compiler
 
-### Libraries
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-- [React 18](https://reactjs.org/)
-- [React Router 6](https://reactrouter.com)
-- [tailwindcss 3](https://tailwindcss.com/)
-  - [tailwindcss forms plugin](https://tailwindcss-forms.vercel.app/)
-- [TypeScript 4.9.5](https://www.typescriptlang.org/)
-- [vite 4](https://vitejs.dev/)
-- [vitetest](https://vitest.dev/)
+## Expanding the ESLint configuration
 
-### Tools
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-- [commitlint 17](https://commitlint.js.org)
-- [Conventional Commits 1](https://www.conventionalcommits.org)
-- [editorconfig](https://editorconfig.org/)
-- [eslint 8](https://eslint.org/)
-- [husky 8](https://typicode.github.io/husky/#/)
-- [Prettier 2](https://prettier.io/)
-- [VS Code settings](https://code.visualstudio.com/)
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-## Usage
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
-Create a new project from this template by clicking the "Use this template" button:
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
 
-![](assets/template-usage.png)
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-```bash
-yarn
-yarn dev
-yarn test
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
