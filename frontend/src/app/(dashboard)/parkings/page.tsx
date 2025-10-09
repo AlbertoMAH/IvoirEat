@@ -1,36 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from "@tanstack/react-table"
-import { MoreHorizontal } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Table,
   TableBody,
@@ -39,22 +10,39 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
-// --- Type Definition ---
-type Parking = {
-  ID: number
-  name: string
-  location: string
-  capacity: number
-  tenant_id: number
+// Type corresponding to the backend model
+interface Parking {
+  ID: number;
+  name: string;
+  location: string;
+  capacity: number;
 }
+
+// Type for creating/updating a parking
+type ParkingInput = Omit<Parking, 'ID'>;
 
 // --- API Functions ---
 const fetchParkings = async (): Promise<Parking[]> => {
@@ -63,248 +51,174 @@ const fetchParkings = async (): Promise<Parking[]> => {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) throw new Error("Failed to fetch parkings")
-  return response.json()
+  const data = await response.json();
+  return data || []; // Ensure it returns an array even if API returns null
 }
 
-const createParking = async (newParking: Omit<Parking, "ID">) => {
+const createParking = async (newParking: ParkingInput) => {
   const token = localStorage.getItem("token")
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/parkings`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(newParking),
   })
-  if (!response.ok) throw new Error("Failed to create parking")
+  if (!response.ok) throw new Error('Failed to create parking')
   return response.json()
 }
 
-const updateParking = async (updatedParking: Parking) => {
-  const token = localStorage.getItem("token")
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/parkings/${updatedParking.ID}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(updatedParking),
-  })
-  if (!response.ok) throw new Error("Failed to update parking")
-  return response.json()
+const updateParking = async (parkingToUpdate: Parking) => {
+    const token = localStorage.getItem("token")
+    const { ID, ...data } = parkingToUpdate;
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/parkings/${ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(data),
+    })
+    if (!response.ok) throw new Error('Failed to update parking')
+    return response.json()
 }
 
 const deleteParking = async (id: number) => {
-  const token = localStorage.getItem("token")
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/parkings/${id}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  })
-  if (!response.ok) throw new Error("Failed to delete parking")
-  return response.json()
+    const token = localStorage.getItem("token")
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/parkings/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!response.ok) throw new Error('Failed to delete parking')
+    return { success: true };
 }
 
 
-// --- DataTable Component ---
-interface DataTableProps<TData, TValue> {
-  columns: ColumnDef<TData, TValue>[]
-  data: TData[]
-}
-
-function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-  })
-
-  return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                No results.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
-  )
-}
-
-// --- Main Page Component ---
 export default function ParkingsPage() {
   const queryClient = useQueryClient()
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isFormOpen, setIsFormOpen] = useState(false)
   const [selectedParking, setSelectedParking] = useState<Parking | null>(null)
 
-  // Form state
-  const [name, setName] = useState("")
-  const [location, setLocation] = useState("")
-  const [capacity, setCapacity] = useState(0)
-  const [tenantId, setTenantId] = useState(1) // Defaulting to 1 for superadmin
-
-  const { data: parkings, isLoading, isError } = useQuery<Parking[]>({
+  const { data: parkings = [], isLoading, isError, error } = useQuery<Parking[], Error>({
     queryKey: ["parkings"],
     queryFn: fetchParkings,
   })
 
-  const mutationOptions = {
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["parkings"] })
-      setIsDialogOpen(false)
-      setSelectedParking(null)
-    },
+  const invalidateAndRefetch = () => {
+    queryClient.invalidateQueries({ queryKey: ["parkings"] })
   }
 
-  const createMutation = useMutation({ mutationFn: createParking, ...mutationOptions })
-  const updateMutation = useMutation({ mutationFn: updateParking, ...mutationOptions })
-  const deleteMutation = useMutation({ mutationFn: deleteParking, ...mutationOptions })
+  const createMutation = useMutation({ mutationFn: createParking, onSuccess: invalidateAndRefetch })
+  const updateMutation = useMutation({ mutationFn: updateParking, onSuccess: invalidateAndRefetch })
+  const deleteMutation = useMutation({ mutationFn: deleteParking, onSuccess: invalidateAndRefetch })
 
-  const handleOpenDialog = (parking: Parking | null = null) => {
+  const openForm = (parking: Parking | null) => {
     setSelectedParking(parking)
-    if (parking) {
-      setName(parking.name)
-      setLocation(parking.location)
-      setCapacity(parking.capacity)
-      setTenantId(parking.tenant_id)
-    } else {
-      setName("")
-      setLocation("")
-      setCapacity(0)
-      setTenantId(1)
-    }
-    setIsDialogOpen(true)
+    setIsFormOpen(true)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const parkingData = { name, location, capacity, tenant_id: tenantId }
+  const closeForm = () => {
+    setIsFormOpen(false)
+    setSelectedParking(null)
+  }
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const data: ParkingInput = {
+      name: formData.get('name') as string,
+      location: formData.get('location') as string,
+      capacity: parseInt(formData.get('capacity') as string, 10),
+    };
+
     if (selectedParking) {
-      updateMutation.mutate({ ...parkingData, ID: selectedParking.ID })
+      updateMutation.mutate({ ...data, ID: selectedParking.ID });
     } else {
-      createMutation.mutate(parkingData)
+      createMutation.mutate(data);
     }
+    closeForm();
   }
-
-  const columns: ColumnDef<Parking>[] = [
-    { accessorKey: "name", header: "Nom" },
-    { accessorKey: "location", header: "Adresse" },
-    { accessorKey: "capacity", header: "Capacité" },
-    { accessorKey: "tenant_id", header: "Client ID" },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        const parking = row.original
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <span className="sr-only">Open menu</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => handleOpenDialog(parking)}>
-                Modifier
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-red-600"
-                onClick={() => deleteMutation.mutate(parking.ID)}
-              >
-                Supprimer
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      },
-    },
-  ]
 
   if (isLoading) return <div>Chargement des parkings...</div>
-  if (isError) return <div>Erreur lors du chargement des parkings.</div>
+  if (isError) return <div>Erreur: {error.message}</div>
 
   return (
-    <div className="space-y-8">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Gestion des Parkings</CardTitle>
-            <CardDescription>
-              Ajoutez, modifiez ou supprimez des parkings.
-            </CardDescription>
-          </div>
-          <Button onClick={() => handleOpenDialog()}>Ajouter un Parking</Button>
-        </CardHeader>
-        <CardContent>
-          <DataTable columns={columns} data={parkings || []} />
-        </CardContent>
-      </Card>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Gestion des Parkings</h1>
+        <Button onClick={() => openForm(null)}>Ajouter un parking</Button>
+      </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <form onSubmit={handleSubmit}>
             <DialogHeader>
-              <DialogTitle>{selectedParking ? "Modifier le Parking" : "Ajouter un Parking"}</DialogTitle>
-              <DialogDescription>
-                Remplissez les détails du parking ici.
-              </DialogDescription>
+              <DialogTitle>{selectedParking ? "Modifier le parking" : "Ajouter un nouveau parking"}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">Nom</Label>
-                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" required />
+                <Input id="name" name="name" defaultValue={selectedParking?.name} required className="col-span-3" />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="location" className="text-right">Adresse</Label>
-                <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} className="col-span-3" required />
+                <Input id="location" name="location" defaultValue={selectedParking?.location} required className="col-span-3" />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="capacity" className="text-right">Capacité</Label>
-                <Input id="capacity" type="number" value={capacity} onChange={(e) => setCapacity(parseInt(e.target.value, 10))} className="col-span-3" required />
-              </div>
-               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="tenantId" className="text-right">Client ID</Label>
-                <Input id="tenantId" type="number" value={tenantId} onChange={(e) => setTenantId(parseInt(e.target.value, 10))} className="col-span-3" required />
+                <Label htmlFor="capacity" className="text-right">Places</Label>
+                <Input id="capacity" name="capacity" type="number" defaultValue={selectedParking?.capacity} required className="col-span-3" />
               </div>
             </div>
             <DialogFooter>
-              <DialogClose asChild><Button type="button" variant="secondary">Annuler</Button></DialogClose>
-              <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                Enregistrer
-              </Button>
+              <Button type="button" variant="outline" onClick={closeForm}>Annuler</Button>
+              <Button type="submit">Enregistrer</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nom</TableHead>
+              <TableHead>Adresse</TableHead>
+              <TableHead>Capacité</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {parkings.length > 0 ? (
+              parkings.map((parking) => (
+                <TableRow key={parking.ID}>
+                  <TableCell>{parking.name}</TableCell>
+                  <TableCell>{parking.location}</TableCell>
+                  <TableCell>{parking.capacity}</TableCell>
+                  <TableCell className="text-right space-x-2">
+                    <Button variant="outline" size="sm" onClick={() => openForm(parking)}>Modifier</Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm">Supprimer</Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Cette action est irréversible et supprimera définitivement le parking "{parking.name}".
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteMutation.mutate(parking.ID)}>Supprimer</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center">Aucun parking trouvé.</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }

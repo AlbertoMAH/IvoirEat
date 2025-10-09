@@ -24,9 +24,9 @@ export default function DashboardLayout({
               </Link>
             </li>
             <li>
-              <a href="#" className="block py-2 px-4 rounded hover:bg-gray-700">
+              <Link href="/admins" className="block py-2 px-4 rounded hover:bg-gray-700">
                 Admins
-              </a>
+              </Link>
             </li>
             <li>
               <a href="#" className="block py-2 px-4 rounded hover:bg-gray-700">
