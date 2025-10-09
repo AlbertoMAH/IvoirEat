@@ -131,7 +131,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Utilisateurs</CardTitle>
-            <CardDescription>Nombre total d'admins</CardDescription>
+            <CardDescription>Nombre total d&apos;admins</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-4xl font-bold">{data?.total_users}</p>
@@ -140,7 +140,7 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Réservations</CardTitle>
-            <CardDescription>Aujourd'hui</CardDescription>
+            <CardDescription>Aujourd&apos;hui</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-4xl font-bold">{data?.today_reservations}</p>
