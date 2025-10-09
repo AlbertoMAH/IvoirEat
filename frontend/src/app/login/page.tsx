@@ -36,12 +36,10 @@ export default function LoginPage() {
       }
 
       const data = await response.json()
-      // Assuming the token is in data.token
       localStorage.setItem("token", data.token)
       return data
     },
     onSuccess: () => {
-      // On success, redirect to the dashboard or home page
       router.push("/")
     },
   })

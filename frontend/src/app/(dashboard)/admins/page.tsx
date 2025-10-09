@@ -1,4 +1,4 @@
- "use client"
+"use client"
 
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -55,41 +55,31 @@ interface Admin {
 type AdminInput = Omit<Admin, 'ID'> & { password?: string };
 
 // --- API Functions ---
-
-// Helper to handle API responses and errors
 const handleApiResponse = async (response: Response, entity: string, action: string) => {
     if (response.ok) {
-        // For DELETE requests, a 204 No Content is a success but has no body to parse
         if (response.status === 204 || response.headers.get("Content-Length") === "0") {
             return { success: true };
         }
         return response.json();
     }
-
     let errorMessage = `Failed to ${action} ${entity}. Status: ${response.status}`;
     try {
         const errorData = await response.json();
-        // Assuming the backend sends errors in a { error: "message" } format
         if (errorData && errorData.error) {
             errorMessage = errorData.error;
         }
     } catch (e) {
-        // The response body was not JSON or was empty.
         console.error("Could not parse error response body:", e);
     }
-
-    console.error(`API Error (${action} ${entity}):`, errorMessage);
     throw new Error(errorMessage);
 };
-
 
 const fetchAdmins = async (): Promise<Admin[]> => {
   const token = localStorage.getItem("token")
   const response = await fetch(`/api/v1/users?role=tenant_admin`, {
     headers: { Authorization: `Bearer ${token}` },
   })
-  const data = await handleApiResponse(response, "admins", "fetch");
-  return data || []
+  return handleApiResponse(response, "admins", "fetch");
 }
 
 const fetchParkings = async (): Promise<Parking[]> => {
@@ -97,8 +87,7 @@ const fetchParkings = async (): Promise<Parking[]> => {
     const response = await fetch(`/api/v1/parkings`, {
         headers: { Authorization: `Bearer ${token}` },
     })
-    const data = await handleApiResponse(response, "parkings", "fetch");
-    return data || []
+    return handleApiResponse(response, "parkings", "fetch");
 }
 
 const createAdmin = async (newAdmin: AdminInput) => {
@@ -136,7 +125,7 @@ export default function AdminsPage() {
     const [isFormOpen, setIsFormOpen] = useState(false)
     const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null)
 
-    const { data: admins = [], isLoading: isLoadingAdmins, isError: isErrorAdmins, error: errorAdmins } = useQuery<Admin[], Error>({
+    const { data: admins = [], isLoading: isLoadingAdmins, isError: isErrorAdmins } = useQuery<Admin[], Error>({
         queryKey: ["admins"],
         queryFn: fetchAdmins,
     });
@@ -192,16 +181,7 @@ export default function AdminsPage() {
     }
 
     if (isLoadingAdmins || isLoadingParkings) return <div>Chargement...</div>
-    if (isErrorAdmins) {
-        console.error("Détails de l'erreur lors de la récupération des admins:", errorAdmins);
-        return (
-            <div className="text-center text-red-600 p-4 border border-red-300 bg-red-50 rounded-md">
-                <p className="font-semibold">Une erreur est survenue.</p>
-                <p>Impossible de charger la liste des administrateurs. Veuillez réessayer plus tard.</p>
-                <p className="text-sm text-gray-500 mt-2">(Les détails techniques ont été enregistrés dans la console)</p>
-            </div>
-        );
-    }
+    if (isErrorAdmins) return <div>Erreur lors du chargement des administrateurs.</div>
 
     return (
         <div className="space-y-4">
@@ -227,7 +207,7 @@ export default function AdminsPage() {
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="password" className="text-right">Mot de passe</Label>
-                                <Input id="password" name="password" type="password" placeholder={selectedAdmin ? "Laisser vide pour ne pas changer" : "Mot de passe"} className="col-span-3" />
+                                <Input id="password" name="password" type="password" placeholder={selectedAdmin ? "Laisser vide pour ne pas changer" : ""} className="col-span-3" />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="tenant_id" className="text-right">Parking</Label>
