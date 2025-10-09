@@ -79,6 +79,12 @@ func SetupRoutes(router *gin.Engine) {
 				reservations.PUT("/:id", controllers.UpdateReservation)
 				reservations.DELETE("/:id", controllers.DeleteReservation)
 			}
+
+			// Route pour les statistiques du dashboard
+			dashboard := v1.Group("/dashboard")
+			{
+				dashboard.GET("/stats", controllers.GetDashboardStats)
+			}
 		}
 	}
 }
