@@ -1,4 +1,5 @@
 import React from "react"
+import Link from "next/link"
 
 export default function DashboardLayout({
   children,
@@ -13,14 +14,14 @@ export default function DashboardLayout({
         <nav className="mt-8">
           <ul>
             <li>
-              <a href="#" className="block py-2 px-4 rounded hover:bg-gray-700">
+              <Link href="/" className="block py-2 px-4 rounded hover:bg-gray-700">
                 Overview
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#" className="block py-2 px-4 rounded hover:bg-gray-700">
+              <Link href="/parkings" className="block py-2 px-4 rounded hover:bg-gray-700">
                 Parkings
-              </a>
+              </Link>
             </li>
             <li>
               <a href="#" className="block py-2 px-4 rounded hover:bg-gray-700">
