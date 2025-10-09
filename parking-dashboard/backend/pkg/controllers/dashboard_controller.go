@@ -24,7 +24,7 @@ func GetDashboardStats(c *gin.Context) {
 	}
 
 	var availableSpots int64
-	if err := database.DB.Model(&models.Spot{}).Where("is_available = ?", true).Count(&availableSpots).Error; err != nil {
+	if err := database.DB.Model(&models.Spot{}).Where("is_occupied = ?", false).Count(&availableSpots).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count available spots"})
 		return
 	}
