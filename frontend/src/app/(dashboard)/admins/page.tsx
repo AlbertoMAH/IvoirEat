@@ -146,7 +146,7 @@ export default function AdminsPage() {
         const formData = new FormData(event.currentTarget);
         const password = formData.get('password') as string;
 
-        let data: any = {
+        const data: AdminInput = {
           name: formData.get('name') as string,
           email: formData.get('email') as string,
           tenant_id: parseInt(formData.get('tenant_id') as string, 10),
@@ -245,7 +245,7 @@ export default function AdminsPage() {
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
                                                 <AlertDialogDescription>
-                                                    Cette action supprimera l'administrateur "{admin.name}".
+                                                    Cette action supprimera l&apos;administrateur &quot;{admin.name}&quot;.
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
