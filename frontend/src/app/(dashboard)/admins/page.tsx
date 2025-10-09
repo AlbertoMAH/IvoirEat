@@ -55,13 +55,40 @@ interface Admin {
 type AdminInput = Omit<Admin, 'ID'> & { password?: string };
 
 // --- API Functions ---
+
+// Helper to handle API responses and errors
+const handleApiResponse = async (response: Response, entity: string, action: string) => {
+    if (response.ok) {
+        // For DELETE requests, a 204 No Content is a success but has no body to parse
+        if (response.status === 204 || response.headers.get("Content-Length") === "0") {
+            return { success: true };
+        }
+        return response.json();
+    }
+
+    let errorMessage = `Failed to ${action} ${entity}. Status: ${response.status}`;
+    try {
+        const errorData = await response.json();
+        // Assuming the backend sends errors in a { error: "message" } format
+        if (errorData && errorData.error) {
+            errorMessage = errorData.error;
+        }
+    } catch (e) {
+        // The response body was not JSON or was empty.
+        console.error("Could not parse error response body:", e);
+    }
+
+    console.error(`API Error (${action} ${entity}):`, errorMessage);
+    throw new Error(errorMessage);
+};
+
+
 const fetchAdmins = async (): Promise<Admin[]> => {
   const token = localStorage.getItem("token")
   const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/users?role=tenant_admin`, {
     headers: { Authorization: `Bearer ${token}` },
   })
-  if (!response.ok) throw new Error("Failed to fetch admins")
-  const data = await response.json()
+  const data = await handleApiResponse(response, "admins", "fetch");
   return data || []
 }
 
@@ -70,8 +97,7 @@ const fetchParkings = async (): Promise<Parking[]> => {
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/parkings`, {
         headers: { Authorization: `Bearer ${token}` },
     })
-    if (!response.ok) throw new Error("Failed to fetch parkings for dropdown")
-    const data = await response.json()
+    const data = await handleApiResponse(response, "parkings", "fetch");
     return data || []
 }
 
@@ -82,8 +108,7 @@ const createAdmin = async (newAdmin: AdminInput) => {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...newAdmin, role: 'tenant_admin' }),
     })
-    if (!response.ok) throw new Error('Failed to create admin')
-    return response.json()
+    return handleApiResponse(response, "admin", "create");
 }
 
 const updateAdmin = async (adminToUpdate: Omit<Admin, 'tenant_id'> & { tenant_id?: number, password?: string }) => {
@@ -94,8 +119,7 @@ const updateAdmin = async (adminToUpdate: Omit<Admin, 'tenant_id'> & { tenant_id
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
     })
-    if (!response.ok) throw new Error('Failed to update admin')
-    return response.json()
+    return handleApiResponse(response, "admin", "update");
 }
 
 const deleteAdmin = async (id: number) => {
@@ -104,8 +128,7 @@ const deleteAdmin = async (id: number) => {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
     })
-    if (!response.ok) throw new Error('Failed to delete admin')
-    return { success: true }
+     return handleApiResponse(response, "admin", "delete");
 }
 
 export default function AdminsPage() {
@@ -169,7 +192,16 @@ export default function AdminsPage() {
     }
 
     if (isLoadingAdmins || isLoadingParkings) return <div>Chargement...</div>
-    if (isErrorAdmins) return <div>Erreur (admins): {errorAdmins.message}</div>
+    if (isErrorAdmins) {
+        console.error("Détails de l'erreur lors de la récupération des admins:", errorAdmins);
+        return (
+            <div className="text-center text-red-600 p-4 border border-red-300 bg-red-50 rounded-md">
+                <p className="font-semibold">Une erreur est survenue.</p>
+                <p>Impossible de charger la liste des administrateurs. Veuillez réessayer plus tard.</p>
+                <p className="text-sm text-gray-500 mt-2">(Les détails techniques ont été enregistrés dans la console)</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-4">
