@@ -17,9 +17,6 @@ func SetupRoutes(router *gin.Engine) {
 		})
 	})
 
-	// Appliquer le middleware de validation/CORS à toutes les routes
-	router.Use(middlewares.ValidationMiddleware())
-
 	api := router.Group("/api")
 	{
 		// Routes publiques (ex: login, register)

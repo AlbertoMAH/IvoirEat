@@ -2,6 +2,7 @@ package main
 
 import (
 	"gobackend/pkg/database"
+	"gobackend/pkg/middlewares"
 	"gobackend/pkg/models"
 	"gobackend/pkg/routes"
 	"log"
@@ -41,6 +42,9 @@ func main() {
 
 	// Création du routeur Gin
 	router := gin.Default()
+
+	// Appliquer le middleware CORS en premier pour gérer les requêtes preflight
+	router.Use(middlewares.ValidationMiddleware())
 
 	// Appliquer le middleware pour le préfixe de Render
 	router.Use(StripAppPrefix())

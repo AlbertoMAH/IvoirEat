@@ -5,11 +5,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ValidationMiddleware gère la validation des entrées et la configuration CORS.
-// Pour l'instant, il ne fait que configurer CORS.
+// ValidationMiddleware gère la configuration CORS.
 func ValidationMiddleware() gin.HandlerFunc {
-	// Utilise la configuration par défaut du middleware CORS,
-	// qui est permissive et autorise toutes les origines.
-	// C'est une bonne configuration pour le développement.
-	return cors.Default()
+	// Création d'une configuration CORS personnalisée et plus explicite
+	// pour s'assurer que tous les en-têtes nécessaires sont autorisés.
+	config := cors.Config{
+		AllowAllOrigins:  true,
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Content-Length", "Accept-Encoding", "X-CSRF-Token", "Authorization", "accept", "Cache-Control", "X-Requested-With"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}
+
+	return cors.New(config)
 }
