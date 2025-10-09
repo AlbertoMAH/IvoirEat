@@ -43,11 +43,11 @@ func main() {
 	// Création du routeur Gin
 	router := gin.Default()
 
-	// Appliquer le middleware CORS en premier pour gérer les requêtes preflight
-	router.Use(middlewares.ValidationMiddleware())
-
 	// Appliquer le middleware pour le préfixe de Render
 	router.Use(StripAppPrefix())
+
+	// Appliquer le middleware CORS pour gérer les requêtes cross-origin
+	router.Use(middlewares.ValidationMiddleware())
 
 	// Configuration des routes
 	routes.SetupRoutes(router)
