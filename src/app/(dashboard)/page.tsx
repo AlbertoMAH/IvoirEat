@@ -1,4 +1,4 @@
-"use client"
+ "use client"
 
 import { useQuery } from "@tanstack/react-query"
 import {
@@ -40,7 +40,7 @@ const fetchDashboardStats = async (): Promise<DashboardStats> => {
   }
 
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/dashboard/stats`,
+    `/api/v1/dashboard/stats`,
     {
       headers: {
         Authorization: `Bearer ${token}`,

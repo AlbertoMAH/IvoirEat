@@ -42,9 +42,6 @@ func main() {
 	// Création du routeur Gin
 	router := gin.Default()
 
-	// Gérer automatiquement les slashs finaux
-	router.RedirectTrailingSlash = true
-
 	// Appliquer le middleware pour le préfixe de Render
 	router.Use(StripAppPrefix())
 

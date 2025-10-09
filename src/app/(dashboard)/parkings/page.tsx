@@ -1,4 +1,4 @@
-"use client"
+ "use client"
 
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -46,7 +46,7 @@ type ParkingInput = Omit<Parking, 'ID'>;
 // --- API Functions ---
 const fetchParkings = async (): Promise<Parking[]> => {
   const token = localStorage.getItem("token")
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/parkings`, {
+  const response = await fetch(`/api/v1/parkings`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) throw new Error("Failed to fetch parkings")
@@ -56,7 +56,7 @@ const fetchParkings = async (): Promise<Parking[]> => {
 
 const createParking = async (newParking: ParkingInput) => {
   const token = localStorage.getItem("token")
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/parkings`, {
+  const response = await fetch(`/api/v1/parkings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify(newParking),
@@ -68,7 +68,7 @@ const createParking = async (newParking: ParkingInput) => {
 const updateParking = async (parkingToUpdate: Parking) => {
     const token = localStorage.getItem("token")
     const { ID, ...data } = parkingToUpdate;
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/parkings/${ID}`, {
+    const response = await fetch(`/api/v1/parkings/${ID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
@@ -79,7 +79,7 @@ const updateParking = async (parkingToUpdate: Parking) => {
 
 const deleteParking = async (id: number) => {
     const token = localStorage.getItem("token")
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/parkings/${id}`, {
+    const response = await fetch(`/api/v1/parkings/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
     })

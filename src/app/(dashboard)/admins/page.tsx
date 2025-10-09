@@ -1,4 +1,4 @@
-"use client"
+ "use client"
 
 import { useState } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -85,7 +85,7 @@ const handleApiResponse = async (response: Response, entity: string, action: str
 
 const fetchAdmins = async (): Promise<Admin[]> => {
   const token = localStorage.getItem("token")
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/users?role=tenant_admin`, {
+  const response = await fetch(`/api/v1/users?role=tenant_admin`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   const data = await handleApiResponse(response, "admins", "fetch");
@@ -94,7 +94,7 @@ const fetchAdmins = async (): Promise<Admin[]> => {
 
 const fetchParkings = async (): Promise<Parking[]> => {
     const token = localStorage.getItem("token")
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/parkings`, {
+    const response = await fetch(`/api/v1/parkings`, {
         headers: { Authorization: `Bearer ${token}` },
     })
     const data = await handleApiResponse(response, "parkings", "fetch");
@@ -103,7 +103,7 @@ const fetchParkings = async (): Promise<Parking[]> => {
 
 const createAdmin = async (newAdmin: AdminInput) => {
     const token = localStorage.getItem("token")
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/users`, {
+    const response = await fetch(`/api/v1/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ...newAdmin, role: 'tenant_admin' }),
@@ -114,7 +114,7 @@ const createAdmin = async (newAdmin: AdminInput) => {
 const updateAdmin = async (adminToUpdate: Omit<Admin, 'tenant_id'> & { tenant_id?: number, password?: string }) => {
     const token = localStorage.getItem("token")
     const { ID, ...data } = adminToUpdate
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/users/${ID}`, {
+    const response = await fetch(`/api/v1/users/${ID}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(data),
@@ -124,7 +124,7 @@ const updateAdmin = async (adminToUpdate: Omit<Admin, 'tenant_id'> & { tenant_id
 
 const deleteAdmin = async (id: number) => {
     const token = localStorage.getItem("token")
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/users/${id}`, {
+    const response = await fetch(`/api/v1/users/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
     })
