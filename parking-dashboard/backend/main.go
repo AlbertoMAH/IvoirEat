@@ -46,9 +46,6 @@ func main() {
 	// Appliquer le middleware pour le préfixe de Render
 	router.Use(StripAppPrefix())
 
-	// Appliquer le middleware CORS pour gérer les requêtes cross-origin
-	router.Use(middlewares.ValidationMiddleware())
-
 	// Configuration des routes
 	routes.SetupRoutes(router)
 

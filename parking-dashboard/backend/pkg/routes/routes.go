@@ -18,6 +18,7 @@ func SetupRoutes(router *gin.Engine) {
 	})
 
 	api := router.Group("/api")
+	api.Use(middlewares.ValidationMiddleware()) // Appliquer le middleware CORS ici
 	{
 		// Routes publiques (ex: login, register)
 		api.POST("/login", controllers.Login)
