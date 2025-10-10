@@ -1,6 +1,12 @@
 #!/bin/bash
 
-# Exit immediately if a command exits with a non-zero status.
+# --- Diagnostic Step ---
+echo "[DEBUG] Running final diagnostic start.sh"
+echo "[DEBUG] Listing all files recursively from /app/frontend to find the static assets..."
+ls -R /app/frontend
+echo "[DEBUG] End of file listing."
+# --- End of Diagnostic Step ---
+
 set -e
 
 # Start the Next.js server in the background, explicitly setting host and port
