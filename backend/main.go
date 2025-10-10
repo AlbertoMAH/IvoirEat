@@ -1,12 +1,16 @@
 package main
 
 import (
+	"embed"
+	"io/fs"
 	"net/http"
 	"strings"
 
-	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 )
+
+//go:embed all:public
+var staticFiles embed.FS
 
 // Fruit définit la structure pour nos données de fruits
 type Fruit struct {
@@ -55,10 +59,33 @@ func main() {
 		}
 	}
 
-	// 2. Ensuite, servir les fichiers statiques du frontend.
-	// Le script start.sh nous place dans le dossier /backend avant de lancer le serveur.
-	// Le chemin doit donc être relatif à ce dossier. Le chemin correct est simplement ./public.
-	r.Use(static.Serve("/", static.LocalFile("./public", true)))
+	// 2. Servir les fichiers statiques du frontend directement depuis le binaire.
+	// Crée un sous-système de fichiers qui pointe vers le contenu de notre dossier 'public' embarqué.
+	subFS, err := fs.Sub(staticFiles, "public")
+	if err != nil {
+		panic("Erreur: impossible de créer le sous-système de fichiers pour les fichiers statiques: " + err.Error())
+	}
+
+	// Utilise NoRoute pour intercepter toutes les requêtes qui ne correspondent pas à une route API.
+	// C'est la méthode idéale pour servir une Single Page Application (SPA).
+	r.NoRoute(func(c *gin.Context) {
+		// Récupère le chemin du fichier demandé depuis l'URL.
+		filePath := strings.TrimPrefix(c.Request.URL.Path, "/")
+
+		// Tente d'ouvrir le fichier pour vérifier s'il existe dans le FS embarqué.
+		file, err := subFS.Open(filePath)
+		if err != nil {
+			// Si le fichier n'existe pas (c'est une route gérée par le frontend),
+			// on sert 'index.html', qui est le point d'entrée de la SPA.
+			c.FileFromFS("index.html", http.FS(subFS))
+			return
+		}
+		file.Close() // Il est important de fermer le fichier après vérification.
+
+		// Si le fichier existe, on le sert.
+		c.FileFromFS(filePath, http.FS(subFS))
+	})
+
 
 	r.Run(":8080")
 }
