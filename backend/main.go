@@ -62,13 +62,13 @@ func main() {
 	// --- Service des fichiers statiques et publics de Next.js ---
 
 	// 1. Servir les assets principaux de Next.js (_next/static/*)
-	// Utilisation de StaticFS pour une meilleure gestion des fichiers.
-	staticPath := "/app/frontend/.next/standalone/.next/static"
+	// Utilisation de chemins relatifs pour la cohérence.
+	staticPath := "./frontend/.next/standalone/.next/static"
 	router.StaticFS("/_next/static", http.Dir(staticPath))
 
 	// 2. Servir les fichiers du dossier 'public' de Next.js
-	// Utilisation de chemins absolus.
-	publicPath := "/app/frontend/.next/standalone"
+	// Utilisation de chemins relatifs.
+	publicPath := "./frontend/.next/standalone"
 	router.StaticFile("/favicon.ico", publicPath+"/favicon.ico")
 	// Ajoutez ici d'autres fichiers publics si nécessaire.
 
