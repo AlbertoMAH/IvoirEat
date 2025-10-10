@@ -56,9 +56,9 @@ func main() {
 	}
 
 	// 2. Ensuite, servir les fichiers statiques du frontend.
-	// Le chemin doit être relatif au répertoire depuis lequel le binaire est exécuté.
-	// Comme on lance ./backend/app depuis la racine, le chemin correct est ./backend/public.
-	r.Use(static.Serve("/", static.LocalFile("./backend/public", true)))
+	// Le script start.sh nous place dans le dossier /backend avant de lancer le serveur.
+	// Le chemin doit donc être relatif à ce dossier. Le chemin correct est simplement ./public.
+	r.Use(static.Serve("/", static.LocalFile("./public", true)))
 
 	r.Run(":8080")
 }
