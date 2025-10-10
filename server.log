@@ -1,15 +1,20 @@
+--- Démarrage du serveur Next.js (sur le port 3000) en arrière-plan ---
+--- Démarrage du reverse proxy Go (sur le port 8080) en avant-plan ---
 [GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
 
 [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
  - using env:	export GIN_MODE=release
  - using code:	gin.SetMode(gin.ReleaseMode)
 
-[GIN-debug] POST   /register                 --> main.registerRestaurant (3 handlers)
-[GIN-debug] GET    /admin                    --> main.adminDashboard (3 handlers)
+[GIN-debug] GET    /api/message              --> main.main.func1 (3 handlers)
 [GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
 Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
 [GIN-debug] Listening and serving HTTP on :8080
-[GIN] 2025/09/07 - 16:15:28 | 404 |       2.239µs |       127.0.0.1 | GET      "/favicon.ico"
-[GIN] 2025/09/07 - 16:15:31 | 404 |       2.812µs |       127.0.0.1 | GET      "/"
-[GIN] 2025/09/07 - 16:16:40 | 404 |       2.344µs |       127.0.0.1 | GET      "/"
-[GIN] 2025/09/07 - 16:19:34 | 404 |       3.177µs |       127.0.0.1 | GET      "/"
+yarn run v1.22.22
+$ next start
+   ▲ Next.js 15.5.4
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.0.2:3000
+
+ ✓ Starting...
+ ✓ Ready in 1060ms

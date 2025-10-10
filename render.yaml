@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: go-next-app # Nom du service sur Render
+    env: go # Indique à Render d'utiliser un environnement Go
+    plan: free # Utiliser le plan gratuit de Render
+    buildCommand: |
+      # Rendre notre script de démarrage exécutable
+      chmod +x ./start.sh
+      # Installer les dépendances du frontend
+      yarn --cwd ./frontend install
+      # Construire l'application Next.js pour la production
+      yarn --cwd ./frontend build
+      # Compiler notre backend Go en un exécutable nommé 'app'
+      go build -o ./backend/app ./backend
+    startCommand: ./start.sh
