@@ -59,6 +59,9 @@ func main() {
 	// Les routes API sont servies par Go.
 	routes.SetupRoutes(router)
 
+	// Servir les fichiers statiques de Next.js directement pour de meilleures performances.
+	router.Static("/_next/static", "./frontend/.next/static")
+
 	// Toutes les autres requêtes sont transférées au serveur Next.js.
 	// Le serveur Next.js tournera sur le port 3000 dans le même conteneur.
 	nextjsUrl := "http://localhost:3000"
