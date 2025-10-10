@@ -6,9 +6,9 @@ services:
       # Rendre le script de démarrage exécutable
       chmod +x ./start.sh
       # Build du frontend
-      cd frontend && yarn install && yarn build && cd ..
+      yarn --cwd ./frontend install && yarn --cwd ./frontend build
       # Build du backend
-      cd backend && go build -o app . && cd ..
+      go build -o ./backend/app ./backend
     startCommand: ./start.sh
     envVars:
       - key: DATABASE_URL
