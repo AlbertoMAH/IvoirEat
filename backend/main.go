@@ -1,38 +1,17 @@
 package main
 
 import (
-	"log"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 )
-
-// Reverse proxy pour l'application Next.js
-func ReverseProxy() gin.HandlerFunc {
-	target := "localhost:3000"
-	url, err := url.Parse("http://" + target)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return func(c *gin.Context) {
-		proxy := httputil.NewSingleHostReverseProxy(url)
-		proxy.Director = func(req *http.Request) {
-			req.Header = c.Request.Header
-			req.Host = url.Host
-			req.URL.Scheme = url.Scheme
-			req.URL.Host = url.Host
-			req.URL.Path = c.Request.URL.Path
-		}
-		proxy.ServeHTTP(c.Writer, c.Request)
-	}
-}
 
 func main() {
 	r := gin.Default()
 
-	// Les routes de l'API sont gérées par Go
+	// 1. Définir les routes de l'API en premier.
+	// Le routeur de Gin donnera la priorité à ces routes spécifiques.
 	api := r.Group("/api")
 	{
 		api.GET("/message", func(c *gin.Context) {
@@ -42,9 +21,11 @@ func main() {
 		})
 	}
 
-	// Toutes les autres routes sont transmises à l'application Next.js
-	// Le proxy doit gérer la racine, les assets, etc.
-	r.NoRoute(ReverseProxy())
+	// 2. Ensuite, utiliser le middleware pour servir les fichiers statiques.
+	// Ce middleware ne sera appelé que pour les requêtes qui ne correspondent pas aux routes API.
+	// Le second paramètre `true` active le mode "HTML5", qui redirige les 404 vers /index.html,
+	// ce qui est parfait pour une Single Page Application.
+	r.Use(static.Serve("/", static.LocalFile("./public", true)))
 
 	r.Run(":8080")
 }

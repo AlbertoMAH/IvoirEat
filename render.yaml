@@ -8,8 +8,12 @@ services:
       chmod +x ./start.sh
       # Installer les dépendances du frontend
       yarn --cwd ./frontend install
-      # Construire l'application Next.js pour la production
+      # Construire l'application Next.js pour la production (génère le dossier 'out')
       yarn --cwd ./frontend build
+      # Créer le dossier public pour le serveur Go
+      mkdir -p ./backend/public
+      # Copier les fichiers statiques du frontend vers le dossier public du backend
+      cp -r ./frontend/out/* ./backend/public/
       # Compiler notre backend Go en un exécutable nommé 'app'
       go build -o ./backend/app ./backend
     startCommand: ./start.sh
