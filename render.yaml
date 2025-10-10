@@ -1,23 +1,15 @@
 services:
   - type: web
-    name: frontend
-    runtime: node
-    rootDir: frontend
-    buildCommand: yarn && yarn build
-    startCommand: yarn start
-    publishDirectory: .next
-    envVars:
-      - key: NEXT_PUBLIC_API_BASE_URL
-        fromService:
-          type: web
-          name: backend
-          property: url
-  - type: web
-    name: backend
-    runtime: go
-    rootDir: parking-dashboard/backend
-    buildCommand: go build -o app .
-    startCommand: ./app
+    name: ivoire-parking # Nom du service unifié
+    runtime: go # L'environnement principal est Go, car il lance tout
+    buildCommand: |
+      # Rendre le script de démarrage exécutable
+      chmod +x ./start.sh
+      # Build du frontend
+      cd frontend && yarn install && yarn build && cd ..
+      # Build du backend
+      cd backend && go build -o app . && cd ..
+    startCommand: ./start.sh
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -26,6 +18,8 @@ services:
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD
+        sync: false
+      - key: JWT_SECRET_KEY
         sync: false
 
 databases:

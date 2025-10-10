@@ -5,6 +5,9 @@ import (
 	"gobackend/pkg/models"
 	"gobackend/pkg/routes"
 	"log"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"strings"
 
@@ -16,39 +19,51 @@ import (
 // StripAppPrefix est un middleware pour supprimer le préfixe /app ajouté par Render.
 func StripAppPrefix() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Vérifie si le chemin de la requête commence par /app
 		if strings.HasPrefix(c.Request.URL.Path, "/app") {
-			// Réécrit le chemin de l'URL sans le préfixe
 			c.Request.URL.Path = strings.TrimPrefix(c.Request.URL.Path, "/app")
 		}
-		// Passe à la prochaine fonction middleware/handler
 		c.Next()
 	}
 }
 
+// reverseProxy transfère les requêtes au serveur Next.js.
+func reverseProxy(target string) gin.HandlerFunc {
+	remoteUrl, err := url.Parse(target)
+	if err != nil {
+		panic("URL de proxy invalide")
+	}
+	proxy := httputil.NewSingleHostReverseProxy(remoteUrl)
+	proxy.Director = func(req *http.Request) {
+		req.URL.Scheme = remoteUrl.Scheme
+		req.URL.Host = remoteUrl.Host
+		req.Host = remoteUrl.Host
+	}
+
+	return func(c *gin.Context) {
+		proxy.ServeHTTP(c.Writer, c.Request)
+	}
+}
+
 func main() {
-	// Charger les variables d'environnement depuis le fichier .env
 	err := godotenv.Load()
 	if err != nil {
 		log.Println("No .env file found")
 	}
 
-	// Connexion à la base de données
 	database.ConnectDatabase()
-
-	// Créer l'utilisateur super_admin si nécessaire
 	createSuperAdmin()
 
-	// Création du routeur Gin
 	router := gin.Default()
-
-	// Appliquer le middleware pour le préfixe de Render
 	router.Use(StripAppPrefix())
 
-	// Configuration des routes
+	// Les routes API sont servies par Go.
 	routes.SetupRoutes(router)
 
-	// Démarrage du serveur
+	// Toutes les autres requêtes sont transférées au serveur Next.js.
+	// Le serveur Next.js tournera sur le port 3000 dans le même conteneur.
+	nextjsUrl := "http://localhost:3000"
+	router.NoRoute(reverseProxy(nextjsUrl))
+
 	router.Run(":8080")
 }
 
@@ -63,18 +78,15 @@ func createSuperAdmin() {
 
 	var user models.User
 	if err := database.DB.Where("email = ?", adminEmail).First(&user).Error; err == nil {
-		// L'utilisateur existe déjà
 		log.Println("Super admin user already exists.")
 		return
 	}
 
-	// Hacher le mot de passe
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(adminPassword), bcrypt.DefaultCost)
 	if err != nil {
 		log.Fatalf("Failed to hash password: %v", err)
 	}
 
-	// Créer le nouvel utilisateur
 	superAdmin := models.User{
 		Email:    adminEmail,
 		Password: string(hashedPassword),
@@ -84,6 +96,4 @@ func createSuperAdmin() {
 	if err := database.DB.Create(&superAdmin).Error; err != nil {
 		log.Fatalf("Failed to create super admin: %v", err)
 	}
-
-	// log.Println("Super admin user created successfully.")
 }
