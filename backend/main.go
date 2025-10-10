@@ -59,15 +59,31 @@ func main() {
 	// Les routes API sont servies par Go.
 	routes.SetupRoutes(router)
 
-	// Servir les fichiers statiques de Next.js directement pour de meilleures performances.
-	router.Static("/_next/static", "./frontend/.next/static")
+	// --- Service des fichiers statiques et publics de Next.js ---
 
-	// Toutes les autres requêtes sont transférées au serveur Next.js.
-	// Le serveur Next.js tournera sur le port 3000 dans le même conteneur.
+	// 1. Servir les assets principaux de Next.js (_next/static/*)
+	// Le chemin pointe vers le dossier 'static' DANS la sortie standalone.
+	staticPath := "./frontend/.next/standalone/.next/static"
+	router.Static("/_next/static", staticPath)
+
+	// 2. Servir les fichiers du dossier 'public' de Next.js
+	// Dans la build standalone, ces fichiers sont à la racine du dossier de sortie.
+	publicPath := "./frontend/.next/standalone"
+	router.StaticFile("/favicon.ico", publicPath+"/favicon.ico")
+	// Ajoutez ici d'autres fichiers publics si nécessaire.
+
+	// --- Proxy pour les pages Next.js ---
+	// Toutes les autres requêtes (les pages HTML) sont transférées au serveur Next.js.
 	nextjsUrl := "http://localhost:3000"
 	router.NoRoute(reverseProxy(nextjsUrl))
 
-	router.Run(":8080")
+	// Utiliser le port fourni par Render, avec un fallback pour le développement local.
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Printf("Starting server on port %s", port)
+	router.Run(":" + port)
 }
 
 func createSuperAdmin() {
