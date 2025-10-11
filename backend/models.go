@@ -1,8 +1,10 @@
 package main
 
+import "database/sql"
+
 // Fruit représente la structure de nos données de fruits dans la base de données.
 type Fruit struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	ID          int            `json:"id"`
+	Name        string         `json:"name"`
+	Description sql.NullString `json:"description"`
 }
