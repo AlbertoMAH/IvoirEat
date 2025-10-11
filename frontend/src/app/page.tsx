@@ -1,9 +1,15 @@
-import FruitSearch from "@/components/app/FruitSearch";
+import KPIStats from "@/components/app/dashboard/KPIStats";
+import ParkingTable from "@/components/app/dashboard/ParkingTable";
+import MapView from "@/components/app/dashboard/MapView";
+import StatsDashboard from "@/components/app/dashboard/StatsDashboard";
 
-export default function Home() {
+export default function DashboardPage() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-50">
-      <FruitSearch />
-    </main>
+    <div className="space-y-8">
+      <KPIStats />
+      <MapView />
+      <StatsDashboard />
+      <ParkingTable />
+    </div>
   );
 }

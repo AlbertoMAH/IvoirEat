@@ -1,21 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-import Providers from "@/components/Providers";
+import Providers from "@/components/Providers"; // Assurez-vous que ce chemin est correct
+import DashboardLayout from "@/components/app/DashboardLayout";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Fruit Search App",
-  description: "Search for fruits with Go and Next.js",
+  title: "Babipark - Super Admin Dashboard",
+  description: "Dashboard de gestion pour le réseau de parkings Babipark.",
 };
 
 export default function RootLayout({
@@ -24,11 +17,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <Providers>{children}</Providers>
+    <html lang="fr">
+      <body className={inter.className}>
+        <Providers>
+          <DashboardLayout>
+            {children}
+          </DashboardLayout>
+        </Providers>
       </body>
     </html>
   );
