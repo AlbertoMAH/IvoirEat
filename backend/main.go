@@ -73,7 +73,7 @@ func main() {
 	// Route explicite pour la racine ("/") pour éviter les conflits de redirection.
 	// Elle sert le point d'entrée de notre Single Page Application.
 	r.GET("/", func(c *gin.Context) {
-		c.FileFromFS("index.html", http.FS(subFS))
+		c.String(http.StatusOK, "OK")
 	})
 
 	// NoRoute gère toutes les autres routes (ex: /dashboard, /profile) qui ne sont pas des API.
