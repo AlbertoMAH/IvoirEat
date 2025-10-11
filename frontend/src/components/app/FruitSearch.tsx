@@ -3,11 +3,16 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Search } from "lucide-react";
+
 
 // Définir le type pour un fruit, correspondant à la structure Go
 type Fruit = {
   id: number;
   name: string;
+  description: string;
 };
 
 // Fonction pour appeler notre API Go
@@ -49,35 +54,54 @@ const FruitSearch = () => {
   });
 
   return (
-    <div className="w-full max-w-md">
-      <h1 className="text-3xl font-bold mb-6 text-center">Rechercher un Fruit</h1>
-      <Input
-        type="text"
-        placeholder="Tapez pour rechercher (ex: Pomme)..."
-        className="text-lg p-4"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
-      <div className="mt-8 min-h-[10rem] rounded-lg bg-white p-4 shadow-sm border border-gray-200">
-        {isLoading && <p className="text-center text-gray-500 animate-pulse">Chargement...</p>}
-        {error && <p className="text-center text-red-500 font-semibold">Erreur: {error.message}</p>}
-        {!isLoading && !error && fruits && fruits.length > 0 && (
-          <ul className="space-y-2">
-            {fruits.map((fruit) => (
-              <li key={fruit.id} className="p-2 rounded-md bg-gray-50 text-gray-800">
-                {fruit.name}
-              </li>
-            ))}
-          </ul>
-        )}
-        {!isLoading && !error && fruits && fruits.length === 0 && debouncedSearchTerm && (
-          <p className="text-center text-gray-500 pt-8">Aucun fruit trouvé pour "{debouncedSearchTerm}".</p>
-        )}
-         {!isLoading && !error && (!fruits || fruits.length === 0) && !debouncedSearchTerm && (
-          <p className="text-center text-gray-500 pt-8">Veuillez taper pour commencer la recherche.</p>
-        )}
-      </div>
-    </div>
+    <Card className="w-full max-w-lg mx-auto">
+      <CardHeader>
+        <CardTitle className="text-2xl font-bold tracking-tight text-center">
+          Rechercher un Fruit
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Ex: Banane"
+            className="pl-10 text-base"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="mt-6 min-h-[200px] space-y-3">
+          {isLoading && (
+            <>
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </>
+          )}
+          {error && (
+            <div className="text-center text-red-500 font-semibold pt-8">
+              <p>Erreur: {error.message}</p>
+              <p className="text-sm text-gray-500">Le serveur backend est-il bien lancé ?</p>
+            </div>
+          )}
+          {!isLoading && !error && fruits && fruits.length > 0 && (
+            fruits.map((fruit) => (
+              <div key={fruit.id} className="p-3 rounded-lg border bg-gray-50/50">
+                <p className="font-semibold text-gray-800">{fruit.name}</p>
+                <p className="text-sm text-gray-600">{fruit.description}</p>
+              </div>
+            ))
+          )}
+          {!isLoading && !error && fruits && fruits.length === 0 && debouncedSearchTerm && (
+            <p className="text-center text-gray-500 pt-8">Aucun fruit trouvé pour "{debouncedSearchTerm}".</p>
+          )}
+          {!isLoading && !error && (!fruits || fruits.length === 0) && !debouncedSearchTerm && (
+            <p className="text-center text-gray-500 pt-8">Veuillez taper pour commencer la recherche.</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
