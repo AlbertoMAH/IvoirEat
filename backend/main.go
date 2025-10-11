@@ -70,8 +70,14 @@ func main() {
 		panic("Erreur: impossible de créer le sous-système de fichiers pour les fichiers statiques: " + err.Error())
 	}
 
-	// Utilise NoRoute pour intercepter toutes les requêtes qui ne correspondent pas à une route API.
-	// C'est la méthode idéale pour servir une Single Page Application (SPA).
+	// Route explicite pour la racine ("/") pour éviter les conflits de redirection.
+	// Elle sert le point d'entrée de notre Single Page Application.
+	r.GET("/", func(c *gin.Context) {
+		c.FileFromFS("index.html", http.FS(subFS))
+	})
+
+	// NoRoute gère toutes les autres routes (ex: /dashboard, /profile) qui ne sont pas des API.
+	// C'est essentiel pour le routage côté client dans une SPA.
 	r.NoRoute(func(c *gin.Context) {
 		// Récupère le chemin du fichier demandé depuis l'URL.
 		filePath := strings.TrimPrefix(c.Request.URL.Path, "/")
