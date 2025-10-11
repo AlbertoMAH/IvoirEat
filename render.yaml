@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: ivoreat-admin-dashboard
+    env: node
+    plan: free
+    buildCommand: "cd frontend && npm install && npm run build"
+    startCommand: "cd frontend && npm start"
+    envVars:
+      - key: NODE_VERSION
+        value: 20
