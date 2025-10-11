@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query';
-import { Parking, KPIStats, Alert, StatsData } from './types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Parking, KPIStats, Alert, StatsData, AdminUser } from './types';
 
-const API_DELAY = 800; // Délai de chargement simulé
+const API_DELAY = 600; // Délai de chargement simulé
 
 // Fonction utilitaire pour simuler l'attente
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -38,6 +38,11 @@ const mockChartData: StatsData[] = [
   { month: 'Juin', occupancy: 65, revenue: 23 },
 ];
 
+let mockUsers: AdminUser[] = [
+    { id: 'u1', name: 'Marc Dupont', email: 'marc.dupont@example.com', role: 'Admin', parkingIds: ['p1', 'p5'] },
+    { id: 'u2', name: 'Sophie Martin', email: 'sophie.martin@example.com', role: 'Admin', parkingIds: ['p2', 'p6'] },
+];
+
 /** Simule l'appel à une API REST */
 async function mockFetch<T>(endpoint: string, data: T): Promise<T> {
   await wait(API_DELAY);
@@ -47,6 +52,17 @@ async function mockFetch<T>(endpoint: string, data: T): Promise<T> {
 
   return data;
 }
+
+// --- Fonctions de mutation simulées ---
+export const mockAddUser = async (newUserData: Omit<AdminUser, 'id'>): Promise<AdminUser> => {
+    await wait(API_DELAY);
+    const newUser: AdminUser = {
+        ...newUserData,
+        id: `u${mockUsers.length + 1}`,
+    };
+    mockUsers = [...mockUsers, newUser];
+    return newUser;
+};
 
 // Hooks React Query pour le fetching de données
 export const useParkings = () => useQuery<Parking[], Error>({
@@ -68,3 +84,19 @@ export const useChartData = () => useQuery<StatsData[], Error>({
   queryKey: ['chartData'],
   queryFn: () => mockFetch('/api/stats', mockChartData),
 });
+
+export const useUsers = () => useQuery<AdminUser[], Error>({
+    queryKey: ['users'],
+    queryFn: () => mockFetch('/api/users', mockUsers),
+});
+
+export const useAddUser = () => {
+    const queryClient = useQueryClient();
+    return useMutation<AdminUser, Error, Omit<AdminUser, 'id'>>({
+        mutationFn: mockAddUser,
+        onSuccess: () => {
+            // Invalider et re-fetcher la query 'users' après un succès
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+        },
+    });
+};

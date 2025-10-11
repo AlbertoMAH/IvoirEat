@@ -36,3 +36,12 @@ export interface StatsData {
   occupancy: number; // Taux d'occupation moyen
   revenue: number; // Revenu en milliers
 }
+
+/** Type for a parking administrator */
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'Admin' | 'Super Admin';
+  parkingIds: string[];
+}
