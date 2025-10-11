@@ -75,7 +75,7 @@ func main() {
 	// qui semble causer une redirection 301 sur les requêtes HEAD du health checker de Render.
 	r.GET("/", func(c *gin.Context) {
 		// Lire le contenu de index.html depuis le FS embarqué.
-		fileContent, err := subFS.ReadFile("index.html")
+		fileContent, err := fs.ReadFile(subFS, "index.html")
 		if err != nil {
 			// Si le fichier n'est pas trouvé, renvoyer une erreur 500.
 			c.String(http.StatusInternalServerError, "index.html non trouvé")
