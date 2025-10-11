@@ -1,3 +1,0 @@
-# Ignorer les exécutables compilés
-backend/app
-\n# Ignore frontend build artifacts\nbackend/public/*
