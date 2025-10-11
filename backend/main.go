@@ -38,7 +38,11 @@ func getFruitByName(name string) *Fruit {
 }
 
 func main() {
-	r := gin.Default()
+	// Initialisation personnalisée de Gin pour désactiver la redirection
+	r := gin.New()
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
+	r.RedirectTrailingSlash = false // LA CORRECTION CLÉ
 
 	// 1. Définir les routes de l'API en premier.
 	api := r.Group("/api")
