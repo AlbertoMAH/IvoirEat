@@ -37,7 +37,12 @@ func seedDatabase() {
 		"Poire":     "Fruit en forme de cloche, à la texture granuleuse.",
 	}
 
-	query := `INSERT INTO fruits (name, description) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING;`
+	query := `
+	INSERT INTO fruits (name, description)
+	VALUES ($1, $2)
+	ON CONFLICT (name)
+	DO UPDATE SET description = EXCLUDED.description;
+	`
 
 	for name, description := range fruitsToSeed {
 		_, err := DB.Exec(query, name, description)
