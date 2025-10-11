@@ -24,7 +24,10 @@ func main() {
 	// Initialiser la connexion à la base de données
 	initDB()
 
-	// Créer la table et insérer les données de test
+	// Lancer la migration avant toute autre opération sur la base de données
+	migrateDatabase()
+
+	// Créer la table (ne fera rien si elle existe déjà) et insérer les données de test
 	createFruitsTable()
 	seedDatabase()
 

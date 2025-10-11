@@ -48,3 +48,30 @@ func seedDatabase() {
 	}
 	fmt.Println("Database has been seeded with initial fruit data.")
 }
+
+// migrateDatabase vérifie si la colonne 'description' existe et l'ajoute si ce n'est pas le cas.
+func migrateDatabase() {
+	var columnExists bool
+	query := `
+	SELECT EXISTS (
+		SELECT 1
+		FROM information_schema.columns
+		WHERE table_name = 'fruits' AND column_name = 'description'
+	);`
+	err := DB.QueryRow(query).Scan(&columnExists)
+	if err != nil {
+		log.Fatalf("Failed to check for description column: %v", err)
+	}
+
+	if !columnExists {
+		fmt.Println("Column 'description' not found. Altering table...")
+		alterQuery := `ALTER TABLE fruits ADD COLUMN description TEXT;`
+		_, err := DB.Exec(alterQuery)
+		if err != nil {
+			log.Fatalf("Failed to add description column: %v", err)
+		}
+		fmt.Println("Table 'fruits' has been successfully altered.")
+	} else {
+		fmt.Println("Column 'description' already exists. No migration needed.")
+	}
+}
