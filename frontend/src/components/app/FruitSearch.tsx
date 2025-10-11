@@ -12,7 +12,10 @@ import { Search } from "lucide-react";
 type Fruit = {
   id: number;
   name: string;
-  description: string;
+  description: {
+    String: string;
+    Valid: boolean;
+  };
 };
 
 // Fonction pour appeler notre API Go
@@ -89,7 +92,9 @@ const FruitSearch = () => {
             fruits.map((fruit) => (
               <div key={fruit.id} className="p-3 rounded-lg border bg-gray-50/50">
                 <p className="font-semibold text-gray-800">{fruit.name}</p>
-                <p className="text-sm text-gray-600">{fruit.description}</p>
+                {fruit.description.Valid && (
+                  <p className="text-sm text-gray-600">{fruit.description.String}</p>
+                )}
               </div>
             ))
           )}
