@@ -71,9 +71,18 @@ func main() {
 	}
 
 	// Route explicite pour la racine ("/") pour éviter les conflits de redirection.
-	// Elle sert le point d'entrée de notre Single Page Application.
+	// Servir index.html manuellement pour contourner un problème avec c.FileFromFS
+	// qui semble causer une redirection 301 sur les requêtes HEAD du health checker de Render.
 	r.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "OK")
+		// Lire le contenu de index.html depuis le FS embarqué.
+		fileContent, err := subFS.ReadFile("index.html")
+		if err != nil {
+			// Si le fichier n'est pas trouvé, renvoyer une erreur 500.
+			c.String(http.StatusInternalServerError, "index.html non trouvé")
+			return
+		}
+		// Servir le contenu avec le bon type MIME.
+		c.Data(http.StatusOK, "text/html; charset=utf-8", fileContent)
 	})
 
 	// NoRoute gère toutes les autres routes (ex: /dashboard, /profile) qui ne sont pas des API.
