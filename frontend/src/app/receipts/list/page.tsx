@@ -62,27 +62,49 @@ export default function ReceiptListPage() {
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Your Receipts</h1>
-      {message && <p className="text-red-500">{message}</p>}
-      {receipts.length === 0 && !message && (
-        <p>You have no receipts yet. Try uploading one!</p>
+    <div className="container mx-auto p-4 max-w-4xl">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Mes Notes de Frais</h1>
+      </div>
+
+      {message && <p className="text-red-500 text-center">{message}</p>}
+
+      {isLoading && <p className="text-center text-gray-500">Chargement...</p>}
+
+      {!isLoading && receipts.length === 0 && !message && (
+        <div className="text-center py-12 px-6 bg-gray-50 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">Aucune note de frais</h3>
+          <p className="mt-1 text-sm text-gray-500">Commencez par uploader votre premier reçu.</p>
+        </div>
       )}
-      <div className="space-y-4">
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {receipts.map((receipt) => (
-          <div key={receipt.ID} className="p-4 border rounded-lg shadow-sm">
-            <div className="flex justify-between">
-              <span className="font-semibold">{receipt.merchant}</span>
-              <span className="font-bold text-lg">{receipt.amount.toFixed(2)} €</span>
-            </div>
-            <div className="text-sm text-gray-600">
-              {new Date(receipt.date).toLocaleDateString()} - {receipt.receipt_type}
-            </div>
-            {receipt.is_anomaly && (
-              <div className="mt-2 text-xs font-semibold text-red-600 bg-red-100 p-1 rounded-md inline-block">
-                Anomaly Detected
+          <div key={receipt.ID} className="bg-white border rounded-lg shadow-sm overflow-hidden transform hover:-translate-y-1 transition-all duration-200">
+            <div className="p-5">
+              <div className="flex justify-between items-start">
+                <h3 className="font-semibold text-lg text-gray-800 truncate" title={receipt.merchant}>
+                  {receipt.merchant}
+                </h3>
+                {receipt.is_anomaly && (
+                  <span className="ml-2 text-xs font-semibold text-red-600 bg-red-100 px-2 py-1 rounded-full">
+                    Anomalie
+                  </span>
+                )}
               </div>
-            )}
+              <p className="text-sm text-gray-500 mb-4">{receipt.receipt_type}</p>
+
+              <p className="text-3xl font-bold text-gray-900 mb-4">
+                {receipt.amount.toFixed(2)} <span className="text-xl font-normal text-gray-500">€</span>
+              </p>
+
+              <p className="text-sm text-gray-600">
+                {new Date(receipt.date).toLocaleDateString()}
+              </p>
+            </div>
           </div>
         ))}
       </div>

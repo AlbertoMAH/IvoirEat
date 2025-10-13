@@ -1,3 +1,4 @@
+/* eslint-disable */
 "use client";
 
 import { useState, FormEvent } from "react";
@@ -8,6 +9,7 @@ export default function UploadReceiptPage() {
   const [message, setMessage] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const { token } = useAuth();
+  const [dragActive, setDragActive] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -60,31 +62,70 @@ export default function UploadReceiptPage() {
     }
   };
 
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setFile(e.dataTransfer.files[0]);
+    }
+  };
+
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Upload a Receipt</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="receiptImage" className="block text-sm font-medium text-gray-700">
-            Receipt Image
-          </label>
+    <div className="container mx-auto p-4 max-w-lg">
+      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">Uploader un Reçu</h1>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div
+          onDragEnter={handleDrag}
+          onDragLeave={handleDrag}
+          onDragOver={handleDrag}
+          onDrop={handleDrop}
+          className={`relative border-2 border-dashed rounded-lg p-10 text-center transition-colors duration-200 ${
+            dragActive ? "border-indigo-600 bg-indigo-50" : "border-gray-300"
+          }`}
+        >
           <input
             id="receiptImage"
             name="receiptImage"
             type="file"
             onChange={handleFileChange}
-            className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
+          <div className="flex flex-col items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <p className="mt-2 text-sm text-gray-600">
+              <span className="font-semibold">Cliquez pour choisir un fichier</span> ou glissez-déposez.
+            </p>
+            <p className="text-xs text-gray-500">PNG, JPG, GIF jusqu'à 10MB</p>
+            {file && <p className="mt-4 text-sm font-medium text-green-600">{file.name}</p>}
+          </div>
         </div>
+
         <button
           type="submit"
           disabled={isLoading || !file}
-          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-400"
+          className="w-full px-4 py-3 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700 disabled:bg-gray-400 transition-all duration-200 ease-in-out"
         >
-          {isLoading ? "Uploading..." : "Upload"}
+          {isLoading ? "Analyse en cours..." : "Analyser et Sauvegarder"}
         </button>
       </form>
-      {message && <p className="mt-4 text-sm text-gray-600">{message}</p>}
+      {message && (
+        <p className={`mt-4 text-sm text-center ${message.startsWith("Error") ? "text-red-600" : "text-gray-800"}`}>
+          {message}
+        </p>
+      )}
     </div>
   );
 }

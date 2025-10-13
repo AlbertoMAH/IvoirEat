@@ -25,29 +25,43 @@ func main() {
 	// Set up the Gin router
 	r := gin.Default()
 
-	// Group public routes
-	public := r.Group("/api")
+	// All API routes will be under the /api group
+	api := r.Group("/api")
 	{
-		public.GET("/ping", ping)
-	}
+		// Public routes
+		api.GET("/ping", ping)
 
-	// Group auth routes
-	auth := r.Group("/api/auth")
-	{
-		auth.POST("/register", controllers.Register)
-		auth.POST("/login", controllers.Login)
-	}
+		// Auth routes
+		auth := api.Group("/auth")
+		{
+			auth.POST("/register", controllers.Register)
+			auth.POST("/login", controllers.Login)
+		}
 
-	// Group protected routes
-	protected := r.Group("/api")
-	protected.Use(middleware.RequireAuth)
-	{
-		// This is a test route to check if the auth middleware works
-		protected.GET("/validate", func(c *gin.Context) {
-			user, _ := c.Get("user")
-			c.JSON(http.StatusOK, gin.H{"message": "I'm logged in", "user": user})
-		})
-		// TODO: Add other protected routes for receipts, alerts, etc.
+		// Protected routes - everything in here requires authentication
+		protected := api.Group("/")
+		protected.Use(middleware.RequireAuth)
+		{
+			// This is a test route to check if the auth middleware works
+			protected.GET("/validate", func(c *gin.Context) {
+				user, _ := c.Get("user")
+				c.JSON(http.StatusOK, gin.H{"message": "I'm logged in", "user": user})
+			})
+
+			// Receipts routes
+			receipts := protected.Group("/receipts")
+			{
+				receipts.POST("/upload", controllers.UploadReceipt)
+				receipts.GET("/", controllers.GetReceipts)
+			}
+
+			// Alerts routes
+			alerts := protected.Group("/alerts")
+			{
+				alerts.GET("/thresholds", controllers.GetThresholds)
+				alerts.POST("/thresholds", controllers.UpdateThresholds)
+			}
+		}
 	}
 
 	// Start the server
