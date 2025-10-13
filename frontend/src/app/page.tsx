@@ -32,8 +32,12 @@ export default function Home() {
 
       const data = await response.json();
       setProtectedMessage(JSON.stringify(data, null, 2));
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unknown error occurred");
+      }
     }
   };
 
@@ -66,7 +70,7 @@ export default function Home() {
               href="/register"
               className="px-4 py-2 font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
             >
-              S'inscrire
+              S&apos;inscrire
             </Link>
           </div>
         )}
@@ -76,8 +80,8 @@ export default function Home() {
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Test de Route Protégée</h2>
           <p className="text-sm text-gray-600">
-            Cliquez sur ce bouton pour tester l'accès à une route qui nécessite
-            d'être authentifié.
+            Cliquez sur ce bouton pour tester l&apos;accès à une route qui nécessite
+            d&apos;être authentifié.
           </p>
           <button
             onClick={handleProtectedRouteClick}

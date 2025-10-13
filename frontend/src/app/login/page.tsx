@@ -2,14 +2,12 @@
 
 import { useState, FormEvent } from "react";
 import { useAuth } from "../../contexts/AuthContext";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const { login } = useAuth();
-  const router = useRouter();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -28,9 +26,13 @@ export default function LoginPage() {
       }
 
       const data = await response.json();
-      login(data.token); // The login function from context handles token storage and redirect
-    } catch (err: any) {
-      setError(err.message);
+      login(data.token);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unknown error occurred");
+      }
     }
   };
 
