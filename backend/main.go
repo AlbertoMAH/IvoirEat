@@ -52,7 +52,7 @@ func main() {
 			receipts := protected.Group("/receipts")
 			{
 				receipts.POST("/upload", controllers.UploadReceipt)
-				receipts.GET("/", controllers.GetReceipts)
+				receipts.GET("", controllers.GetReceipts) // Corrected route path
 			}
 
 			// Alerts routes
