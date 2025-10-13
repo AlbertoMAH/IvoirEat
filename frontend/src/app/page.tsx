@@ -49,14 +49,28 @@ export default function Home() {
         </h1>
 
         {isAuthenticated ? (
-          <div className="space-y-4 text-center">
-            <p className="text-lg">Bienvenue ! Vous êtes connecté.</p>
-            <button
-              onClick={logout}
-              className="px-4 py-2 font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
-            >
-              Déconnexion
-            </button>
+          <div className="space-y-4">
+            <p className="text-lg text-center">Bienvenue ! Vous êtes connecté.</p>
+            <div className="flex flex-col items-center justify-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
+              <Link
+                href="/receipts/upload"
+                className="w-full sm:w-auto px-4 py-2 font-medium text-white text-center bg-indigo-600 rounded-md hover:bg-indigo-700"
+              >
+                Uploader un Reçu
+              </Link>
+              <Link
+                href="/receipts/list"
+                className="w-full sm:w-auto px-4 py-2 font-medium text-white text-center bg-green-600 rounded-md hover:bg-green-700"
+              >
+                Voir mes Reçus
+              </Link>
+              <button
+                onClick={logout}
+                className="w-full sm:w-auto px-4 py-2 font-medium text-white bg-red-600 rounded-md hover:bg-red-700"
+              >
+                Déconnexion
+              </button>
+            </div>
           </div>
         ) : (
           <div className="flex justify-center space-x-4">
