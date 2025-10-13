@@ -1,2 +1,9 @@
-main.go:8:2: package main/controllers is not in std (/home/jules/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.0.linux-amd64/src/main/controllers)
-main.go:9:2: package main/database is not in std (/home/jules/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.0.linux-amd64/src/main/database)
+go: downloading github.com/gin-gonic/gin v1.10.1
+go: downloading gorm.io/driver/postgres v1.6.0
+go: downloading gorm.io/gorm v1.30.3
+go: downloading github.com/golang-jwt/jwt/v5 v5.3.0
+go: downloading golang.org/x/crypto v0.43.0
+go: downloading github.com/jackc/pgx/v5 v5.6.0
+go: downloading github.com/gin-contrib/sse v0.1.0
+go: downloading github.com/mattn/go-isatty v0.0.20
+go: downloading golang.org/x/net v0.45.0
