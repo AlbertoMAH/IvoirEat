@@ -46,7 +46,7 @@ func UploadReceipt(c *gin.Context) {
 	defer os.Remove(tempFilePath)
 
 	// Execute the Python OCR script
-	cmd := exec.Command("python", "backend/scripts/ocr.py", tempFilePath)
+	cmd := exec.Command("python3", "backend/scripts/ocr.py", tempFilePath)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("OCR script execution error: %s\n", err)
