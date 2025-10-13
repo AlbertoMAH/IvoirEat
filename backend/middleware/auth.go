@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"main/database"
-	"main/models"
+	"gobackend/database"
+	"gobackend/models"
 )
 
 func RequireAuth(c *gin.Context) {

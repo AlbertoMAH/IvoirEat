@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"main/models"
+	"gobackend/models"
 )
 
 var DB *gorm.DB

@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
-	"main/models"
+	"gobackend/models"
 )
 
 var DB *gorm.DB

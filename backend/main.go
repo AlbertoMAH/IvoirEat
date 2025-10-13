@@ -5,8 +5,9 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"main/controllers"
-	"main/database"
+	"gobackend/controllers"
+	"gobackend/database"
+	"gobackend/middleware"
 )
 
 // ping is a simple health check endpoint
