@@ -7,7 +7,7 @@ export default function Home() {
 
   const handleClick = async () => {
     try {
-      const response = await fetch("/ping");
+      const response = await fetch("/api/ping");
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
