@@ -149,6 +149,11 @@ func adminDashboard(c *gin.Context) {
 	tmpl.Execute(c.Writer, restaurants)
 }
 
+// Ping API endpoint for health check
+func ping(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"message": "pong"})
+}
+
 // -------------------------
 // Main
 // -------------------------
@@ -158,6 +163,7 @@ func main() {
 	r := gin.Default()
 	r.POST("/register", registerRestaurant)
 	r.GET("/admin", adminDashboard)
+	r.GET("/ping", ping)
 
 	r.Run(":8080")
 }
