@@ -8,119 +8,189 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"gobackend/models"
 )
 
+// --- OCR.space API Structures ---
+type OCRSpaceResponse struct {
+	ParsedResults []struct {
+		ParsedText string `json:"ParsedText"`
+	} `json:"ParsedResults"`
+	IsErroredOnProcessing bool   `json:"IsErroredOnProcessing"`
+	ErrorMessage          string `json:"ErrorMessage"`
+}
 
-// POST /receipts/upload
-// Upload a new receipt by calling the OCR microservice
+// --- Logic ported from Python ---
+
+func findTotal(text string) float64 {
+    patterns := []string{
+        `(?i)(?:TOTAL|TOTAL\s*TTC|MONTANT\s*TTC|TOTAL\s*A\s*PAYER)\s*[:\s]*([\d\s,.]+)`,
+        `(?i)([\d\s,.]+)\s*(?:TOTAL|TTC)`,
+    }
+    highestAmount := 0.0
+
+    for _, pattern := range patterns {
+        re := regexp.MustCompile(pattern)
+        matches := re.FindAllStringSubmatch(text, -1)
+        for _, match := range matches {
+            if len(match) > 1 {
+                amountStr := strings.Replace(match[1], ",", ".", -1)
+                amountStr = regexp.MustCompile(`[^\d.]`).ReplaceAllString(amountStr, "")
+                if amount, err := strconv.ParseFloat(amountStr, 64); err == nil {
+                    if amount > highestAmount {
+                        highestAmount = amount
+                    }
+                }
+            }
+        }
+    }
+
+    if highestAmount == 0.0 {
+        re := regexp.MustCompile(`(\d+[,.]\d{2})`)
+        matches := re.FindAllString(text, -1)
+        for _, amountStr := range matches {
+            amountStr = strings.Replace(amountStr, ",", ".", -1)
+            if amount, err := strconv.ParseFloat(amountStr, 64); err == nil {
+                if amount > highestAmount {
+                    highestAmount = amount
+                }
+            }
+        }
+    }
+    return highestAmount
+}
+
+func findDate(text string) string {
+    re := regexp.MustCompile(`(\d{2}[-/]\d{2}[-/]\d{4})|(\d{4}[-/]\d{2}[-/]\d{2})`)
+    match := re.FindString(text)
+    if match != "" {
+        // Normalize date to YYYY-MM-DD
+        layouts := []string{"02-01-2006", "02/01/2006", "2006-01-02"}
+        for _, layout := range layouts {
+            if t, err := time.Parse(layout, match); err == nil {
+                return t.Format("2006-01-02")
+            }
+        }
+    }
+    return time.Now().Format("2006-01-02")
+}
+
+func findMerchant(text string) string {
+    lines := strings.Split(text, "\n")
+    if len(lines) > 0 {
+        for _, line := range lines {
+            trimmedLine := strings.TrimSpace(line)
+            if trimmedLine != "" {
+                return trimmedLine
+            }
+        }
+    }
+    return "Unknown Merchant"
+}
+
+func classifyReceipt(text string) string {
+    textLower := strings.ToLower(text)
+    categories := map[string][]string{
+        "Transport":  {"taxi", "trajet", "course", "station", "carburant", "ticket", "vol"},
+        "Restaurant": {"restaurant", "repas", "menu", "table", "boisson", "cafe", "snack"},
+        "Hébergement": {"hotel", "chambre", "nuitée", "séjour"},
+        "Achats":     {"supermarché", "articles", "ttc", "boutique", "fournitures"},
+        "Services":   {"abonnement", "licence", "honoraires", "consultation", "réparation"},
+        "Santé":      {"pharmacie", "medicament", "consultation", "soin"},
+    }
+
+    for category, keywords := range categories {
+        for _, keyword := range keywords {
+            if strings.Contains(textLower, keyword) {
+                return category
+            }
+        }
+    }
+    return "Divers"
+}
+
+// --- Main Controller Function ---
+
 func UploadReceipt(c *gin.Context) {
-	// 1. Get the user from the context
-	user, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
+	// 1. Get user and file
+	user, _ := c.Get("user")
 	currentUser := user.(models.User)
-
-	// 2. Handle the file upload from the request
 	fileHeader, err := c.FormFile("receiptImage")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Image upload failed"})
 		return
 	}
 
-	// 3. Prepare the file for the HTTP request to the OCR service
-	file, err := fileHeader.Open()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open uploaded file"})
+	// 2. Prepare request to OCR.space
+	apiKey := os.Getenv("OCR_SPACE_API_KEY")
+	if apiKey == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "OCR API Key not configured"})
 		return
 	}
-	defer file.Close()
 
-	// Create a buffer to store our request body
 	var requestBody bytes.Buffer
 	writer := multipart.NewWriter(&requestBody)
+	_ = writer.WriteField("apikey", apiKey)
+	_ = writer.WriteField("language", "fre")
 
-	// Create a form field for the file
-	part, err := writer.CreateFormFile("receiptImage", fileHeader.Filename)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create form file"})
-		return
-	}
-
-	// Copy the file content to the form field
-	_, err = io.Copy(part, file)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to copy file content"})
-		return
-	}
+	file, _ := fileHeader.Open()
+	part, _ := writer.CreateFormFile("file", fileHeader.Filename)
+	_, _ = io.Copy(part, file)
+	file.Close()
 	writer.Close()
 
-	// 4. Make the HTTP POST request to the OCR service
-	ocrServiceURL := os.Getenv("OCR_SERVICE_URL")
-	if ocrServiceURL == "" {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "OCR service URL not configured"})
-		return
-	}
-
-	req, err := http.NewRequest("POST", ocrServiceURL+"/ocr", &requestBody)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request to OCR service"})
-		return
-	}
+	// 3. Send request to OCR.space
+	req, _ := http.NewRequest("POST", "https://api.ocr.space/parse/image", &requestBody)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	client := &http.Client{Timeout: time.Second * 30}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("Error calling OCR service: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to call OCR service"})
 		return
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		log.Printf("OCR service returned non-OK status: %s, body: %s", resp.Status, string(bodyBytes))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "OCR service returned an error", "details": string(bodyBytes)})
+	// 4. Parse OCR.space response
+	var ocrResponse OCRSpaceResponse
+	if err := json.NewDecoder(resp.Body).Decode(&ocrResponse); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse OCR response"})
 		return
 	}
-
-	// 5. Parse the JSON response from the OCR service
-	var ocrResult struct {
-		Montant   float64 `json:"montant"`
-		Date      string  `json:"date"`
-		Tvac      float64 `json:"tvac"`
-		Marchand  string  `json:"marchand"`
-		TypeRecu  string  `json:"type_recu"`
-		IsAnomaly bool    `json:"anomalie"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&ocrResult); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse OCR service response"})
+	if ocrResponse.IsErroredOnProcessing {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "OCR processing failed", "details": ocrResponse.ErrorMessage})
 		return
 	}
-
-	// 6. Save the data to the database
-	parsedDate, err := time.Parse("2006-01-02", ocrResult.Date)
-	if err != nil {
-		// Default to now if date parsing fails
-		parsedDate = time.Now()
+	if len(ocrResponse.ParsedResults) == 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No text found in image"})
+		return
 	}
+	rawText := ocrResponse.ParsedResults[0].ParsedText
 
+	// 5. Extract data from text (logic ported from Python)
+	totalAmount := findTotal(rawText)
+	receiptDate := findDate(rawText)
+	merchantName := findMerchant(rawText)
+	receiptType := classifyReceipt(rawText)
+	parsedDate, _ := time.Parse("2006-01-02", receiptDate)
+
+	// 6. Save to database
 	newReceipt := models.Receipt{
 		UserID:      currentUser.ID,
-		Amount:      ocrResult.Montant,
+		Amount:      totalAmount,
 		Date:        parsedDate,
-		Vat:         ocrResult.Tvac,
-		Merchant:    ocrResult.Marchand,
-		ReceiptType: ocrResult.TypeRecu,
-		IsAnomaly:   ocrResult.IsAnomaly,
-		FileURL:     "", // We no longer store the file locally
-		RawOcrData:  "Data processed by external OCR service",
+		Vat:         0.0, // VAT logic not implemented yet
+		Merchant:    merchantName,
+		ReceiptType: receiptType,
+		IsAnomaly:   false, // Anomaly logic not implemented yet
+		FileURL:     "",    // No longer storing file
+		RawOcrData:  rawText,
 	}
 
 	if result := DB.Create(&newReceipt); result.Error != nil {
@@ -135,20 +205,9 @@ func UploadReceipt(c *gin.Context) {
 // GET /receipts
 // Get all receipts for the current user
 func GetReceipts(c *gin.Context) {
-	// Get the user from the context
-	user, exists := c.Get("user")
-	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		return
-	}
+	user, _ := c.Get("user")
 	currentUser := user.(models.User)
-
-	// Find all receipts for the current user
 	var receipts []models.Receipt
-	if result := DB.Where("user_id = ?", currentUser.ID).Find(&receipts); result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve receipts"})
-		return
-	}
-
+	DB.Where("user_id = ?", currentUser.ID).Find(&receipts)
 	c.JSON(http.StatusOK, gin.H{"receipts": receipts})
 }
