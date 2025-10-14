@@ -24,7 +24,7 @@ type Receipt struct {
 	Merchant    string    `json:"merchant"`
 	ReceiptType string    `json:"receipt_type"`
 	IsAnomaly   bool      `json:"is_anomaly"`
-	RawOcrData  string    `json:"raw_ocr_data" gorm:"type:jsonb"`
+	RawOcrData  string    `json:"raw_ocr_data" gorm:"type:text"`
 	FileURL     string    `json:"file_url"`
 }
 
