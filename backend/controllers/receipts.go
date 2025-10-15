@@ -148,7 +148,7 @@ func UploadReceipt(c *gin.Context) {
 	req, _ := http.NewRequest("POST", "https://api.ocr.space/parse/image", &requestBody)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	client := &http.Client{Timeout: time.Second * 30}
+	client := &http.Client{Timeout: time.Second * 60}
 	resp, err := client.Do(req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to call OCR service"})
