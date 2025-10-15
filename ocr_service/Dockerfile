@@ -9,7 +9,8 @@ COPY requirements.txt .
 
 # Install any needed packages specified in requirements.txt
 # We use --no-cache-dir to reduce image size and a long timeout for large packages
-RUN pip install --no-cache-dir --timeout=600 -r requirements.txt
+# --no-hash is added to prevent issues with corrupted package hashes in some environments
+RUN pip install --no-cache-dir --timeout=600 --no-deps --no-binary :all: --no-hash -r requirements.txt
 
 # Copy the rest of the application's code into the container at /app
 COPY . .
