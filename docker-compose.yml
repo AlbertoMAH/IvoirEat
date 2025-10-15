@@ -27,7 +27,6 @@ services:
     environment:
       - DB_URL=postgresql://admin:password@db:5432/gosaas?sslmode=disable
       - JWT_SECRET=votre-secret-jwt-local # Remplacez par un secret plus robuste si nécessaire
-      - OCR_SPACE_API_KEY=K86918812288957
     depends_on:
       - db
 
@@ -50,3 +49,14 @@ services:
 
 volumes:
   postgres_data:
+
+  ocr_service:
+    build:
+      context: ./ocr_service
+      dockerfile: Dockerfile
+    container_name: go-saas-ocr
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ocr_service:/app

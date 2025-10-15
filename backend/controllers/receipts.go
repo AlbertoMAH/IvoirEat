@@ -6,7 +6,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -16,13 +15,10 @@ import (
 	"gobackend/models"
 )
 
-// --- OCR.space API Structures ---
-type OCRSpaceResponse struct {
-	ParsedResults []struct {
-		ParsedText string `json:"ParsedText"`
-	} `json:"ParsedResults"`
-	IsErroredOnProcessing bool   `json:"IsErroredOnProcessing"`
-	ErrorMessage          string `json:"ErrorMessage"`
+// --- Local OCR Service Response Structure ---
+type LocalOCRResponse struct {
+	Filename string `json:"filename"`
+	Text     string `json:"text"`
 }
 
 // --- Logic ported from Python ---
@@ -117,7 +113,7 @@ func classifyReceipt(text string) string {
 // --- Main Controller Function ---
 
 func UploadReceipt(c *gin.Context) {
-	// 1. Get user and file
+	// 1. Get user and file from the request
 	user, _ := c.Get("user")
 	currentUser := user.(models.User)
 	fileHeader, err := c.FormFile("receiptImage")
@@ -126,17 +122,9 @@ func UploadReceipt(c *gin.Context) {
 		return
 	}
 
-	// 2. Prepare request to OCR.space
-	apiKey := os.Getenv("OCR_SPACE_API_KEY")
-	if apiKey == "" {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "OCR API Key not configured"})
-		return
-	}
-
+	// 2. Prepare the request to our local OCR service
 	var requestBody bytes.Buffer
 	writer := multipart.NewWriter(&requestBody)
-	_ = writer.WriteField("apikey", apiKey)
-	_ = writer.WriteField("language", "fre")
 
 	file, _ := fileHeader.Open()
 	part, _ := writer.CreateFormFile("file", fileHeader.Filename)
@@ -144,42 +132,43 @@ func UploadReceipt(c *gin.Context) {
 	file.Close()
 	writer.Close()
 
-	// 3. Send request to OCR.space
-	req, _ := http.NewRequest("POST", "https://api.ocr.space/parse/image", &requestBody)
+	// 3. Send the request to the OCR service container
+	// We use the service name 'ocr_service' as the host, which is resolved by Docker's internal DNS
+	ocrServiceURL := "http://ocr_service:8000/ocr"
+	req, _ := http.NewRequest("POST", ocrServiceURL, &requestBody)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
-	client := &http.Client{Timeout: time.Second * 60}
+	// Set a generous timeout as EasyOCR can be slow, especially on first run
+	client := &http.Client{Timeout: time.Minute * 2}
 	resp, err := client.Do(req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to call OCR service"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to call local OCR service", "details": err.Error()})
 		return
 	}
 	defer resp.Body.Close()
 
-	// 4. Parse OCR.space response
-	var ocrResponse OCRSpaceResponse
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "OCR service returned an error", "details": string(bodyBytes)})
+		return
+	}
+
+	// 4. Parse the response from our local OCR service
+	var ocrResponse LocalOCRResponse
 	if err := json.NewDecoder(resp.Body).Decode(&ocrResponse); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse OCR response"})
 		return
 	}
-	if ocrResponse.IsErroredOnProcessing {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "OCR processing failed", "details": ocrResponse.ErrorMessage})
-		return
-	}
-	if len(ocrResponse.ParsedResults) == 0 {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "No text found in image"})
-		return
-	}
-	rawText := ocrResponse.ParsedResults[0].ParsedText
+	rawText := ocrResponse.Text
 
-	// 5. Extract data from text (logic ported from Python)
+	// 5. Extract data from text
 	totalAmount := findTotal(rawText)
 	receiptDate := findDate(rawText)
 	merchantName := findMerchant(rawText)
 	receiptType := classifyReceipt(rawText)
 	parsedDate, _ := time.Parse("2006-01-02", receiptDate)
 
-	// 6. Save to database
+	// 6. Save the new receipt to the database
 	newReceipt := models.Receipt{
 		UserID:      currentUser.ID,
 		Amount:      totalAmount,
