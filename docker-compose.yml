@@ -27,6 +27,7 @@ services:
     environment:
       - DB_URL=postgresql://admin:password@db:5432/gosaas?sslmode=disable
       - JWT_SECRET=votre-secret-jwt-local # Remplacez par un secret plus robuste si nécessaire
+      - OCR_SPACE_API_KEY=K86918812288957
     depends_on:
       - db
 
