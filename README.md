@@ -36,6 +36,8 @@ This is the easiest and most integrated way to get started.
     -   Backend API is available at `http://localhost:8080`
     -   PostgreSQL database is available at `localhost:5432`
 
+> **Note:** The communication between the frontend and backend containers is handled by a proxy configured in `next.config.ts`, which uses the `API_BASE_URL` environment variable set in `docker-compose.yml`.
+
 ---
 
 ### Option 2: Using Docker Compose in the Terminal

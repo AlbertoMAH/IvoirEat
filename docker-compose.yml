@@ -42,6 +42,8 @@ services:
       - ./frontend:/app
       - /app/node_modules # Anonyme volume pour éviter que les node_modules locaux n'écrasent ceux du conteneur
       - /app/.next # Anonyme volume pour le cache de build de Next.js
+    environment:
+      - API_BASE_URL=http://backend:8080
     depends_on:
       - backend
 
