@@ -1,0 +1,38 @@
+{
+  "name": "Go SaaS App - Dev Environment",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "backend", // Le service principal sur lequel VS Code s'attachera
+  "workspaceFolder": "/app",
+
+  // --- Configuration Post-Création ---
+  "postCreateCommand": "go mod download",
+
+  // --- Extensions VS Code Recommandées ---
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Extensions pour Go
+        "golang.go",
+
+        // Extensions pour le Frontend (installées dans VS Code localement, pas dans le conteneur)
+        // Elles fonctionneront car le code est monté en volume.
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+
+        // Extensions pour Docker et la collaboration
+        "ms-azuretools.vscode-docker",
+        "ms-vscode-remote.remote-containers",
+        "ms-vsliveshare.vsliveshare"
+      ]
+    }
+  },
+
+  // --- Redirection de Ports ---
+  // Redirige les ports des conteneurs vers la machine locale
+  "forwardPorts": [8080, 3000, 5432],
+
+  // --- Configuration Utilisateur ---
+  // S'exécute en tant qu'utilisateur non-root pour des raisons de sécurité
+  "remoteUser": "vscode"
+}

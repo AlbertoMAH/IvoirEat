@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: go-saas-db
+    restart: always
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=gosaas
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: go-saas-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DB_URL=postgresql://admin:password@db:5432/gosaas?sslmode=disable
+      - JWT_SECRET=votre-secret-jwt-local # Remplacez par un secret plus robuste si nécessaire
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: go-saas-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # Anonyme volume pour éviter que les node_modules locaux n'écrasent ceux du conteneur
+      - /app/.next # Anonyme volume pour le cache de build de Next.js
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
