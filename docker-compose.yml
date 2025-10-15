@@ -29,6 +29,7 @@ services:
       - JWT_SECRET=votre-secret-jwt-local # Remplacez par un secret plus robuste si nécessaire
     depends_on:
       - db
+      - ocr_service
 
   frontend:
     build:
@@ -40,15 +41,12 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend:/app
-      - /app/node_modules # Anonyme volume pour éviter que les node_modules locaux n'écrasent ceux du conteneur
-      - /app/.next # Anonyme volume pour le cache de build de Next.js
+      - /app/node_modules
+      - /app/.next
     environment:
       - API_BASE_URL=http://backend:8080
     depends_on:
       - backend
-
-volumes:
-  postgres_data:
 
   ocr_service:
     build:
@@ -60,3 +58,6 @@ volumes:
       - "8000:8000"
     volumes:
       - ./ocr_service:/app
+
+volumes:
+  postgres_data: {}
