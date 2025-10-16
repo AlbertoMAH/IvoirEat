@@ -1,89 +1,118 @@
 # =======================================================
-# Script de déploiement local automatisé avec Docker
+# Script de déploiement et de gestion de branches Docker
 # =======================================================
 
 # Force la console à interpréter le script en UTF-8 pour afficher correctement les accents et emojis
 $PSDefaultParameterValues['*:Encoding'] = 'utf8'
 
-Write-Host "Début du script de mise à jour de l'environnement Docker."
-
-# --- Étape 1 : Sélection de la branche ---
-Write-Host "`n1️⃣  Récupération des dernières informations du dépôt..."
-git fetch --all > $null 2>&1
-
-$branches = git branch -r | ForEach-Object { $_.Trim() } | Where-Object { $_ -notmatch "->" }
-Write-Host "`nBranches distantes disponibles :"
-for ($i = 0; $i -lt $branches.Count; $i++) {
-    Write-Host "$($i+1). $($branches[$i])"
-}
-
-# Boucle de validation pour le choix de l'utilisateur
-$choice = $null
+# --- Boucle principale du menu ---
 while ($true) {
-    $input = Read-Host "`nChoisis le numéro de la branche à déployer"
-    if ($input -match '^\d+$' -and [int]$input -ge 1 -and [int]$input -le $branches.Count) {
-        $choice = [int]$input
-        break # Sort de la boucle si le choix est valide
-    } else {
-        Write-Host "Choix invalide. Merci de taper un numéro entre 1 et $($branches.Count)."
+    Write-Host "----------------------------------------------------" -ForegroundColor Green
+    Write-Host "  Script de gestion de l'environnement Docker"
+    Write-Host "----------------------------------------------------" -ForegroundColor Green
+
+    # --- Étape 1 : Menu principal ---
+    Write-Host "`n1️⃣  Récupération des dernières informations du dépôt..."
+    git fetch --all --prune > $null 2>&1 # --prune nettoie les branches qui n'existent plus sur le distant
+
+    $branches = git branch -r | ForEach-Object { $_.Trim() } | Where-Object { $_ -notmatch "->" }
+
+    Write-Host "`nQue souhaitez-vous faire ?"
+    Write-Host "   1. Mettre à jour et déployer une branche"
+    Write-Host "   2. Supprimer une branche distante"
+    Write-Host "   3. Quitter"
+
+    $mainChoice = Read-Host "`nVotre choix"
+
+    switch ($mainChoice) {
+        "1" {
+            # --- DÉPLOIEMENT ---
+            Write-Host "`nBranches distantes disponibles pour le déploiement :"
+            for ($i = 0; $i -lt $branches.Count; $i++) {
+                Write-Host "   $($i+1). $($branches[$i])"
+            }
+
+            $deployChoice = $null
+            while ($true) {
+                $input = Read-Host "`nChoisis le numéro de la branche à déployer"
+                if ($input -match '^\d+$' -and [int]$input -ge 1 -and [int]$input -le $branches.Count) {
+                    $deployChoice = [int]$input
+                    break
+                } else { Write-Host "Choix invalide." }
+            }
+
+            $remoteBranchName = $branches[$deployChoice - 1]
+            $branchName = $remoteBranchName -replace "origin/", ""
+            Write-Host "`nBranche '$branchName' sélectionnée pour le déploiement."
+
+            # --- Mise à jour du code (Méthode Forcée) ---
+            Write-Host "`n2️⃣  Mise à jour du code source depuis Git..."
+            try {
+                git checkout $branchName
+                git reset --hard $remoteBranchName
+            } catch { Write-Host "Erreur lors de la mise à jour : $_"; exit }
+
+            Write-Host "`nCommits récents sur '$branchName' :"
+            git log -5 --oneline
+
+            # --- Lancement avec Docker Compose ---
+            Write-Host "`n4️⃣  Mise à jour de l'environnement Docker..."
+            Write-Host "Reconstruction des images et redémarrage des services..."
+            docker-compose up --build -d
+
+            if ($LASTEXITCODE -ne 0) { Write-Host "❌ Erreur Docker Compose."; exit }
+
+            Write-Host "`n✅ Environnement démarré avec succès !"
+            Write-Host "   - Frontend: http://localhost:3000"
+            Write-Host "   - Backend: http://localhost:8080"
+
+            # --- Affichage des logs ---
+            Write-Host "`n5️⃣  Affichage des logs (Ctrl+C pour revenir au menu)..."
+            docker-compose logs -f --tail="50"
+            # Après Ctrl+C, la boucle recommence
+        }
+        "2" {
+            # --- SUPPRESSION ---
+            Write-Host "`nBranches distantes disponibles pour la suppression :"
+            for ($i = 0; $i -lt $branches.Count; $i++) {
+                Write-Host "   $($i+1). $($branches[$i])"
+            }
+
+            $deleteChoice = $null
+            while ($true) {
+                $input = Read-Host "`nChoisis le numéro de la branche à supprimer"
+                if ($input -match '^\d+$' -and [int]$input -ge 1 -and [int]$input -le $branches.Count) {
+                    $deleteChoice = [int]$input
+                    break
+                } else { Write-Host "Choix invalide." }
+            }
+
+            $remoteBranchNameToDelete = $branches[$deleteChoice - 1]
+            $branchNameToDelete = $remoteBranchNameToDelete -replace "origin/", ""
+
+            $confirmation = Read-Host "Êtes-vous sûr de vouloir supprimer la branche '$branchNameToDelete' ? Cette action est irréversible. (o/n)"
+            if ($confirmation -eq 'o') {
+                Write-Host "Suppression de la branche distante '$branchNameToDelete'..."
+                git push origin --delete $branchNameToDelete
+
+                if (git branch --list $branchNameToDelete) {
+                    Write-Host "Suppression de la branche locale '$branchNameToDelete'..."
+                    git branch -d $branchNameToDelete
+                }
+
+                Write-Host "`n✅ Branche supprimée avec succès."
+            } else {
+                Write-Host "Suppression annulée."
+            }
+            Read-Host "Appuyez sur Entrée pour continuer..."
+        }
+        "3" {
+            # --- QUITTER ---
+            Write-Host "Fin du script."
+            exit
+        }
+        default {
+            Write-Host "Choix invalide, veuillez réessayer."
+        }
     }
 }
-
-$remoteBranchName = $branches[$choice - 1]
-$branchName = $remoteBranchName -replace "origin/", ""
-Write-Host "`nBranche '$branchName' sélectionnée."
-
-# --- Le reste du script est identique ---
-
-# --- Étape 2 : Mise à jour du code source (Méthode Forcée) ---
-Write-Host "`n2️⃣  Mise à jour du code source depuis Git..."
-try {
-    $beforeReset = git rev-parse HEAD
-    git checkout $branchName
-    Write-Host "Forçage de la mise à jour pour correspondre à la version distante (git reset --hard)..."
-    git reset --hard $remoteBranchName
-    $afterReset = git rev-parse HEAD
-} catch {
-    Write-Host "Erreur lors de la mise à jour depuis Git : $_"
-    exit
-}
-
-Write-Host "`nCommits récents sur '$branchName' :"
-git log -5 --oneline
-
-# --- Étape 3 : Logique de reconstruction Docker ---
-Write-Host "`n3️⃣  Analyse des changements pour Docker..."
-$filesChanged = git diff --name-only $beforeReset $afterReset
-
-$needsRebuild = $false
-if ($filesChanged -match "go.mod" -or `
-    $filesChanged -match "package.json" -or `
-    $filesChanged -match "Dockerfile" -or `
-    $filesChanged -match "docker-compose.yml") {
-    $needsRebuild = $true
-}
-
-# --- Étape 4 : Lancement avec Docker Compose ---
-Write-Host "`n4️⃣  Mise à jour de l'environnement Docker..."
-if ($needsRebuild) {
-    Write-Host "Changements détectés dans les dépendances ou la configuration. Reconstruction des images..."
-    docker-compose up --build -d
-} else {
-    Write-Host "Aucun changement de dépendances. Redémarrage des services..."
-    docker-compose up -d
-    Write-Host "Redémarrage du service backend pour appliquer les modifications de code..."
-    docker-compose restart backend
-}
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "❌ Une erreur est survenue avec Docker Compose. Vérifiez les messages ci-dessus."
-    exit
-}
-
-Write-Host "`n✅ Environnement démarré avec succès !"
-Write-Host "   - Frontend accessible sur http://localhost:3000"
-Write-Host "   - Backend accessible sur http://localhost:8080"
-
-# --- Étape 5 : Affichage des logs ---
-Write-Host "`n5️⃣  Affichage des logs en direct (appuyez sur Ctrl+C pour quitter)..."
-docker-compose logs -f --tail="50"

@@ -22,8 +22,6 @@ services:
     restart: always
     ports:
       - "8080:8080"
-    volumes:
-      - ./backend:/app
     environment:
       - DB_URL=postgresql://admin:password@db:5432/gosaas?sslmode=disable
       - JWT_SECRET=votre-secret-jwt-local # Remplacez par un secret plus robuste si nécessaire
@@ -40,7 +38,6 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/app
       - /app/node_modules
       - /app/.next
     environment:
