@@ -10,6 +10,10 @@ COPY go.mod go.sum ./
 # Téléchargement des dépendances. Celles-ci seront mises en cache si les fichiers go.mod/go.sum ne changent pas.
 RUN go mod download
 
+# Copie du fichier de crédentiels GCP dans le conteneur.
+# Important : Ce fichier doit être présent dans le contexte de build.
+COPY gcp-credentials.json .
+
 # Copie du reste du code source du backend dans le conteneur
 COPY . .
 

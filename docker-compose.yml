@@ -24,7 +24,6 @@ services:
       - "8080:8080"
     volumes:
       - ./backend:/app
-      - ./gcp-credentials.json:/app/gcp-credentials.json
     environment:
       - DB_URL=postgresql://admin:password@db:5432/gosaas?sslmode=disable
       - JWT_SECRET=votre-secret-jwt-local # Remplacez par un secret plus robuste si nécessaire
