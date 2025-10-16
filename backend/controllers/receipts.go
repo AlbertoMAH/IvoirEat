@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"regexp"
@@ -139,21 +138,25 @@ func UploadReceipt(c *gin.Context) {
 	}
 	defer client.Close()
 
-	image, err := vision.NewImageFromReader(strings.NewReader(string(fileContents)))
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create image from reader", "details": err.Error()})
-		return
+	image := &visionpb.Image{Content: fileContents}
+
+	feature := &visionpb.Feature{
+		Type: visionpb.Feature_TEXT_DETECTION,
+	}
+	request := &visionpb.AnnotateImageRequest{
+		Image:    image,
+		Features: []*visionpb.Feature{feature},
 	}
 
-	annotations, err := client.DetectTexts(ctx, image, nil, 10)
+	resp, err := client.AnnotateImage(ctx, request)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to detect text", "details": err.Error()})
 		return
 	}
 
 	var rawText string
-	if len(annotations) > 0 {
-		rawText = annotations[0].Description
+	if len(resp.TextAnnotations) > 0 {
+		rawText = resp.TextAnnotations[0].Description
 	} else {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "No text found in image"})
 		return
