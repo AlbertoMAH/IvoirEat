@@ -1,25 +1,20 @@
 package controllers
 
 import (
-	"bytes"
-	"encoding/json"
+	"context"
+	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	vision "cloud.google.com/go/vision/v2/apiv1"
+	"cloud.google.com/go/vision/v2/apiv1/visionpb"
 	"github.com/gin-gonic/gin"
 	"gobackend/models"
 )
-
-// --- Local OCR Service Response Structure ---
-type LocalOCRResponse struct {
-	Filename string `json:"filename"`
-	Text     string `json:"text"`
-}
 
 // --- Logic ported from Python ---
 
@@ -113,7 +108,7 @@ func classifyReceipt(text string) string {
 // --- Main Controller Function ---
 
 func UploadReceipt(c *gin.Context) {
-	// 1. Get user and file from the request
+	// 1. Get user and file
 	user, _ := c.Get("user")
 	currentUser := user.(models.User)
 	fileHeader, err := c.FormFile("receiptImage")
@@ -122,62 +117,65 @@ func UploadReceipt(c *gin.Context) {
 		return
 	}
 
-	// 2. Prepare the request to our local OCR service
-	var requestBody bytes.Buffer
-	writer := multipart.NewWriter(&requestBody)
-
-	file, _ := fileHeader.Open()
-	part, _ := writer.CreateFormFile("file", fileHeader.Filename)
-	_, _ = io.Copy(part, file)
-	file.Close()
-	writer.Close()
-
-	// 3. Send the request to the OCR service container
-	// We use the service name 'ocr_service' as the host, which is resolved by Docker's internal DNS
-	ocrServiceURL := "http://ocr_service:8000/ocr"
-	req, _ := http.NewRequest("POST", ocrServiceURL, &requestBody)
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	// Set a generous timeout as EasyOCR can be slow, especially on first run
-	client := &http.Client{Timeout: time.Minute * 2}
-	resp, err := client.Do(req)
+	file, err := fileHeader.Open()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to call local OCR service", "details": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open image"})
 		return
 	}
-	defer resp.Body.Close()
+	defer file.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "OCR service returned an error", "details": string(bodyBytes)})
+	fileContents, err := io.ReadAll(file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read image content"})
 		return
 	}
 
-	// 4. Parse the response from our local OCR service
-	var ocrResponse LocalOCRResponse
-	if err := json.NewDecoder(resp.Body).Decode(&ocrResponse); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse OCR response"})
+	// 2. Call Google Cloud Vision API
+	ctx := context.Background()
+	client, err := vision.NewImageAnnotatorClient(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create Vision client", "details": err.Error()})
 		return
 	}
-	rawText := ocrResponse.Text
+	defer client.Close()
 
-	// 5. Extract data from text
+	image, err := vision.NewImageFromReader(strings.NewReader(string(fileContents)))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create image from reader", "details": err.Error()})
+		return
+	}
+
+	annotations, err := client.DetectTexts(ctx, image, nil, 10)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to detect text", "details": err.Error()})
+		return
+	}
+
+	var rawText string
+	if len(annotations) > 0 {
+		rawText = annotations[0].Description
+	} else {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "No text found in image"})
+		return
+	}
+
+	// 3. Extract data from text
 	totalAmount := findTotal(rawText)
 	receiptDate := findDate(rawText)
 	merchantName := findMerchant(rawText)
 	receiptType := classifyReceipt(rawText)
 	parsedDate, _ := time.Parse("2006-01-02", receiptDate)
 
-	// 6. Save the new receipt to the database
+	// 4. Save to database
 	newReceipt := models.Receipt{
 		UserID:      currentUser.ID,
 		Amount:      totalAmount,
 		Date:        parsedDate,
-		Vat:         0.0, // VAT logic not implemented yet
+		Vat:         0.0,
 		Merchant:    merchantName,
 		ReceiptType: receiptType,
-		IsAnomaly:   false, // Anomaly logic not implemented yet
-		FileURL:     "",    // No longer storing file
+		IsAnomaly:   false,
+		FileURL:     "",
 		RawOcrData:  rawText,
 	}
 
@@ -189,9 +187,7 @@ func UploadReceipt(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"receipt": newReceipt})
 }
 
-
 // GET /receipts
-// Get all receipts for the current user
 func GetReceipts(c *gin.Context) {
 	user, _ := c.Get("user")
 	currentUser := user.(models.User)

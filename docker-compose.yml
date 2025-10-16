@@ -24,12 +24,13 @@ services:
       - "8080:8080"
     volumes:
       - ./backend:/app
+      - ./gcp-credentials.json:/app/gcp-credentials.json
     environment:
       - DB_URL=postgresql://admin:password@db:5432/gosaas?sslmode=disable
       - JWT_SECRET=votre-secret-jwt-local # Remplacez par un secret plus robuste si nécessaire
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
     depends_on:
       - db
-      - ocr_service
 
   frontend:
     build:
@@ -47,17 +48,6 @@ services:
       - API_BASE_URL=http://backend:8080
     depends_on:
       - backend
-
-  ocr_service:
-    build:
-      context: ./ocr_service
-      dockerfile: Dockerfile
-    container_name: go-saas-ocr
-    restart: always
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./ocr_service:/app
 
 volumes:
   postgres_data: {}
