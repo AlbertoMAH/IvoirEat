@@ -65,7 +65,7 @@ func UploadReceipt(c *gin.Context) {
 	// 4. Run the generation with the prompt
 	resp, err := genkit.Generate(c.Request.Context(), G,
 		ai.WithModelName("googleai/gemini-2.5-flash"),
-		ai.WithMessages(messages),
+		ai.WithMessages(messages...),
 		ai.WithOutputFormat(ai.OutputFormatJSON),
 	)
 	if err != nil {
