@@ -1,8 +1,9 @@
 package controllers
 
 import (
-	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -11,12 +12,6 @@ import (
 	"github.com/firebase/genkit/go/genkit"
 	"github.com/gin-gonic/gin"
 	"gobackend/models"
-	"gorm.io/gorm"
-)
-
-var (
-	DB *gorm.DB
-	G  *genkit.Genkit
 )
 
 // ReceiptData defines the structure for the data we want the AI to extract.
@@ -52,19 +47,25 @@ func UploadReceipt(c *gin.Context) {
 	}
 	mimeType := fileHeader.Header.Get("Content-Type")
 
-	// 2. Define the multimodal prompt for Genkit
-	prompt := []*ai.Part{
-		ai.NewTextPart("Extract the following information from the receipt image and return it as a valid JSON object. " +
-			"The fields are: merchant (string), total (float64), date (string, as YYYY-MM-DD), " +
-			"category (string, one of: Transport, Restaurant, Hébergement, Achats, Services, Santé, Divers), " +
-			"and description (string, a brief summary of the items)."),
-		ai.NewDataPart(fileContents, mimeType),
+	// 2. Create a data URL from the image bytes for the multimodal prompt
+	encodedString := base64.StdEncoding.EncodeToString(fileContents)
+	dataURL := fmt.Sprintf("data:%s;base64,%s", mimeType, encodedString)
+
+	// 3. Define the multimodal prompt for Genkit using the correct message structure
+	messages := []*ai.Message{
+		ai.NewUserMessage(
+			ai.NewTextPart("Extract the following information from the receipt image and return it as a valid JSON object. "+
+				"The fields are: merchant (string), total (float64), date (string, as YYYY-MM-DD), "+
+				"category (string, one of: Transport, Restaurant, Hébergement, Achats, Services, Santé, Divers), "+
+				"and description (string, a brief summary of the items)."),
+			ai.NewMediaPart(mimeType, dataURL),
+		),
 	}
 
-	// 3. Run the generation with the prompt
+	// 4. Run the generation with the prompt
 	resp, err := genkit.Generate(c.Request.Context(), G,
 		ai.WithModelName("googleai/gemini-2.5-flash"),
-		ai.WithPrompt(prompt),
+		ai.WithMessages(messages),
 		ai.WithOutputFormat(ai.OutputFormatJSON),
 	)
 	if err != nil {
@@ -75,7 +76,7 @@ func UploadReceipt(c *gin.Context) {
 		return
 	}
 
-	// 4. Extract and parse the JSON response from the model
+	// 5. Extract and parse the JSON response from the model
 	var extractedData ReceiptData
 	jsonText := resp.Text()
 	if err := json.Unmarshal([]byte(jsonText), &extractedData); err != nil {
@@ -86,13 +87,13 @@ func UploadReceipt(c *gin.Context) {
 		return
 	}
 
-	// 5. Parse the date and create the database model
+	// 6. Parse the date and create the database model
 	parsedDate, err := time.Parse("2006-01-02", extractedData.Date)
 	if err != nil {
 		parsedDate = time.Now()
 	}
 
-	// 6. Save the new receipt to the database
+	// 7. Save the new receipt to the database
 	newReceipt := models.Receipt{
 		UserID:      currentUser.ID,
 		Amount:      extractedData.Total,

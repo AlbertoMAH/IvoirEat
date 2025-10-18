@@ -12,8 +12,6 @@ import (
 	"gobackend/models"
 )
 
-var DB *gorm.DB
-
 // RegisterInput defines the structure for user registration
 type RegisterInput struct {
 	Name     string `json:"name" binding:"required"`
