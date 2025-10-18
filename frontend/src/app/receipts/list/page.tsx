@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import { Plus, BarChart, Clock, AlertTriangle } from "lucide-react";
 import { useAuth } from "../../../contexts/AuthContext";
+import KpiCard from "../../../components/KpiCard";
+import ReceiptCard from "../../../components/ReceiptCard";
 
 // Define the shape of a receipt object
 interface Receipt {
@@ -62,14 +66,49 @@ export default function ReceiptListPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Mes Notes de Frais</h1>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Mes Notes de Frais
+          </h1>
+          <Link
+            href="/receipts/upload"
+            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            <Plus className="-ml-1 mr-2 h-5 w-5" />
+            Ajouter
+          </Link>
+        </div>
 
-      {message && <p className="text-red-500 text-center">{message}</p>}
+        {/* KPI Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <KpiCard
+            title="Dépenses (30 jours)"
+            value="1,250.50 €"
+            subtitle="+5.2% vs. mois dernier"
+            icon={<BarChart className="h-5 w-5 text-green-600" />}
+            colorClass="bg-green-100"
+          />
+          <KpiCard
+            title="En Attente"
+            value="3"
+            subtitle="Pour un total de 180.00 €"
+            icon={<Clock className="h-5 w-5 text-yellow-600" />}
+            colorClass="bg-yellow-100"
+          />
+          <KpiCard
+            title="Anomalies"
+            value="1"
+            subtitle="Nécessite une vérification"
+            icon={<AlertTriangle className="h-5 w-5 text-red-600" />}
+            colorClass="bg-red-100"
+          />
+        </div>
 
-      {isLoading && <p className="text-center text-gray-500">Chargement...</p>}
+        {message && <p className="text-red-500 text-center mb-4">{message}</p>}
+
+        {isLoading && <p className="text-center text-gray-500">Chargement...</p>}
 
       {!isLoading && receipts.length === 0 && !message && (
         <div className="text-center py-12 px-6 bg-gray-50 rounded-lg">
@@ -81,33 +120,18 @@ export default function ReceiptListPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {receipts.map((receipt) => (
-          <div key={receipt.ID} className="bg-white border rounded-lg shadow-sm overflow-hidden transform hover:-translate-y-1 transition-all duration-200">
-            <div className="p-5">
-              <div className="flex justify-between items-start">
-                <h3 className="font-semibold text-lg text-gray-800 truncate" title={receipt.merchant}>
-                  {receipt.merchant}
-                </h3>
-                {receipt.is_anomaly && (
-                  <span className="ml-2 text-xs font-semibold text-red-600 bg-red-100 px-2 py-1 rounded-full">
-                    Anomalie
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-gray-500 mb-4">{receipt.receipt_type}</p>
-
-              <p className="text-3xl font-bold text-gray-900 mb-4">
-                {receipt.amount.toFixed(2)} <span className="text-xl font-normal text-gray-500">€</span>
-              </p>
-
-              <p className="text-sm text-gray-600">
-                {new Date(receipt.date).toLocaleDateString()}
-              </p>
-            </div>
+      {receipts.length > 0 && (
+        <>
+          <h2 className="text-xl font-bold text-gray-800 mb-4">
+            Récents
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {receipts.map((receipt) => (
+              <ReceiptCard key={receipt.ID} receipt={receipt} />
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      )}
     </div>
   );
 }
