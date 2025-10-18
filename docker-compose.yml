@@ -26,6 +26,7 @@ services:
       - DB_URL=postgresql://admin:password@db:5432/gosaas?sslmode=disable
       - JWT_SECRET=votre-secret-jwt-local # Remplacez par un secret plus robuste si nécessaire
       - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-credentials.json
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       - db
 
