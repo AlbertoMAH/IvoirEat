@@ -1,9 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"os"
 
+	"github.com/firebase/genkit/go/genkit"
+	"github.com/firebase/genkit/go/plugins/googlegenai"
 	"github.com/gin-gonic/gin"
 	"gobackend/controllers"
 	"gobackend/database"
@@ -16,6 +20,18 @@ func ping(c *gin.Context) {
 }
 
 func main() {
+	// Initialize Genkit, expecting GEMINI_API_KEY to be in the environment
+	ctx := context.Background()
+	if os.Getenv("GEMINI_API_KEY") == "" {
+		// In a real app, you might not want to log.Fatal here,
+		// but for this project, it's a clear indicator of a missing config.
+		log.Fatal("GEMINI_API_KEY environment variable not set")
+	}
+
+	if err := genkit.Init(ctx, genkit.WithPlugins(googlegenai.Init(ctx, googlegenai.Config{}))); err != nil {
+		log.Fatalf("Failed to initialize genkit: %v", err)
+	}
+
 	// Connect to the database
 	database.ConnectDatabase()
 
