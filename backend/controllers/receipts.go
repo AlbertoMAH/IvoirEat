@@ -11,10 +11,15 @@ import (
 	"github.com/firebase/genkit/go/genkit"
 	"github.com/gin-gonic/gin"
 	"gobackend/models"
+	"gorm.io/gorm"
+)
+
+var (
+	DB *gorm.DB
+	G  *genkit.Genkit
 )
 
 // ReceiptData defines the structure for the data we want the AI to extract.
-// We use JSON tags to guide the model's output.
 type ReceiptData struct {
 	Merchant    string  `json:"merchant"`
 	Total       float64 `json:"total"`
@@ -22,47 +27,6 @@ type ReceiptData struct {
 	Category    string  `json:"category"`
 	Description string  `json:"description"`
 }
-
-// Define the Genkit flow for extracting receipt data.
-// This flow is defined once and can be invoked from our HTTP handler.
-var extractReceiptFlow = genkit.DefineFlow(
-	"extractReceiptFlow",
-	func(ctx context.Context, imageBytes []byte, mimeType string) (ReceiptData, error) {
-		// Define the prompt for the multimodal model.
-		// It includes instructions, the expected JSON format, and the image data.
-		prompt := []*ai.Part{
-			ai.NewTextPart("Extract the following information from the receipt image and return it as a valid JSON object. " +
-				"The fields are: merchant (string), total (float64), date (string, as YYYY-MM-DD), " +
-				"category (string, one of: Transport, Restaurant, Hébergement, Achats, Services, Santé, Divers), " +
-				"and description (string, a brief summary of the items)."),
-			ai.NewDataPart(imageBytes, mimeType),
-		}
-
-		// Configure the request to the generative model.
-		// We specify the model and ask for JSON output.
-		g := genkit.FromContext(ctx)
-		resp, err := genkit.Generate(ctx, g,
-			ai.WithModelName("googleai/gemini-2.5-flash"),
-			ai.WithPrompt(prompt),
-			ai.WithOutputFormat(ai.OutputFormatJSON),
-		)
-		if err != nil {
-			return ReceiptData{}, err
-		}
-
-		// Extract the JSON text and unmarshal it into our struct.
-		var extractedData ReceiptData
-		if jsonText, err := resp.Text(); err == nil {
-			if err := json.Unmarshal([]byte(jsonText), &extractedData); err != nil {
-				return ReceiptData{}, err
-			}
-		} else {
-			return ReceiptData{}, err
-		}
-
-		return extractedData, nil
-	},
-)
 
 func UploadReceipt(c *gin.Context) {
 	// 1. Get user and file from the request
@@ -88,8 +52,21 @@ func UploadReceipt(c *gin.Context) {
 	}
 	mimeType := fileHeader.Header.Get("Content-Type")
 
-	// 2. Run the Genkit flow to extract data
-	extractedData, err := extractReceiptFlow.Run(c.Request.Context(), fileContents, mimeType)
+	// 2. Define the multimodal prompt for Genkit
+	prompt := []*ai.Part{
+		ai.NewTextPart("Extract the following information from the receipt image and return it as a valid JSON object. " +
+			"The fields are: merchant (string), total (float64), date (string, as YYYY-MM-DD), " +
+			"category (string, one of: Transport, Restaurant, Hébergement, Achats, Services, Santé, Divers), " +
+			"and description (string, a brief summary of the items)."),
+		ai.NewDataPart(fileContents, mimeType),
+	}
+
+	// 3. Run the generation with the prompt
+	resp, err := genkit.Generate(c.Request.Context(), G,
+		ai.WithModelName("googleai/gemini-2.5-flash"),
+		ai.WithPrompt(prompt),
+		ai.WithOutputFormat(ai.OutputFormatJSON),
+	)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to extract data from receipt using AI",
@@ -98,27 +75,35 @@ func UploadReceipt(c *gin.Context) {
 		return
 	}
 
-	// 3. Parse the date and create the database model
+	// 4. Extract and parse the JSON response from the model
+	var extractedData ReceiptData
+	jsonText := resp.Text()
+	if err := json.Unmarshal([]byte(jsonText), &extractedData); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to parse AI response",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// 5. Parse the date and create the database model
 	parsedDate, err := time.Parse("2006-01-02", extractedData.Date)
 	if err != nil {
-		// If AI gives a bad date format, default to now, but log the issue.
-		// In a real app, you might want better error handling.
 		parsedDate = time.Now()
 	}
 
-	// 4. Save the new receipt to the database
+	// 6. Save the new receipt to the database
 	newReceipt := models.Receipt{
 		UserID:      currentUser.ID,
 		Amount:      extractedData.Total,
 		Date:        parsedDate,
-		Vat:         0.0, // VAT is not extracted by this flow for now
+		Vat:         0.0,
 		Merchant:    extractedData.Merchant,
 		ReceiptType: extractedData.Category,
 		Description: extractedData.Description,
 		IsAnomaly:   false,
-		FileURL:     "", // File storage URL would be set here
-		// We can store the AI output as raw data for auditing/debugging
-		RawOcrData: string(""), // No longer relevant, could store the JSON output instead
+		FileURL:     "",
+		RawOcrData:  jsonText, // Store the raw JSON from the AI
 	}
 
 	if result := DB.Create(&newReceipt); result.Error != nil {
@@ -158,14 +143,12 @@ func DeleteReceipt(c *gin.Context) {
 	currentUser := user.(models.User)
 	receiptID := c.Param("id")
 
-	// First, find the receipt to ensure it belongs to the current user
 	var receipt models.Receipt
 	if err := DB.Where("id = ? AND user_id = ?", receiptID, currentUser.ID).First(&receipt).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Receipt not found"})
 		return
 	}
 
-	// If found, delete it
 	if err := DB.Delete(&receipt).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete receipt"})
 		return
@@ -186,14 +169,12 @@ func UpdateReceipt(c *gin.Context) {
 		return
 	}
 
-	// Bind the JSON input to a temporary struct
 	var input models.Receipt
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Update the receipt fields
 	if err := DB.Model(&receipt).Updates(input).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update receipt"})
 		return

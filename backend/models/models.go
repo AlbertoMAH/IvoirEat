@@ -23,6 +23,7 @@ type Receipt struct {
 	Vat         float64   `json:"vat"`
 	Merchant    string    `json:"merchant"`
 	ReceiptType string    `json:"receipt_type"`
+	Description string    `json:"description" gorm:"type:text"`
 	IsAnomaly   bool      `json:"is_anomaly"`
 	RawOcrData  string    `json:"raw_ocr_data" gorm:"type:text"`
 	FileURL     string    `json:"file_url"`

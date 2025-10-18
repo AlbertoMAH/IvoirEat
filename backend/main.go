@@ -28,9 +28,11 @@ func main() {
 		log.Fatal("GEMINI_API_KEY environment variable not set")
 	}
 
-	if err := genkit.Init(ctx, genkit.WithPlugins(googlegenai.Init(ctx, googlegenai.Config{}))); err != nil {
+	g, err := genkit.Init(ctx, genkit.WithPlugins(googlegenai.Init(ctx, googlegenai.Config{})))
+	if err != nil {
 		log.Fatalf("Failed to initialize genkit: %v", err)
 	}
+	controllers.G = g // Make genkit instance available to controllers
 
 	// Connect to the database
 	database.ConnectDatabase()
